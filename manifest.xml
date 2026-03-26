@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <!-- BEGIN: Basic Identity -->
+  <Id>00000000-0000-0000-0000-000000000000</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Your Organization</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="MT Data Connector" />
+  <Description DefaultValue="Excel Add-in for connecting to MT API services via Microsoft Account authentication through Authentik." />
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png" />
+  <SupportUrl DefaultValue="https://localhost:3000" />
+  <!-- END: Basic Identity -->
+
+  <AppDomains>
+    <AppDomain>https://login.microsoftonline.com</AppDomain>
+    <AppDomain>https://authentik.example.com</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+
+  <Requirements>
+    <Sets DefaultMinVersion="1.1">
+      <Set Name="SharedRuntime" MinVersion="1.1" />
+    </Sets>
+  </Requirements>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/taskpane.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+
+        <!-- Shared Runtime: all code runs in one context -->
+        <Runtimes>
+          <Runtime resid="Taskpane.Url" lifetime="long" />
+        </Runtimes>
+
+        <!-- Custom Functions Extension Point -->
+        <AllFormFactors>
+          <ExtensionPoint xsi:type="CustomFunctions">
+            <Script>
+              <SourceLocation resid="Functions.Script.Url" />
+            </Script>
+            <Page>
+              <SourceLocation resid="Taskpane.Url" />
+            </Page>
+            <Metadata>
+              <SourceLocation resid="Functions.Metadata.Url" />
+            </Metadata>
+            <Namespace resid="Functions.Namespace" />
+          </ExtensionPoint>
+        </AllFormFactors>
+
+        <!-- Desktop / Web Ribbon -->
+        <DesktopFormFactor>
+          <FunctionFile resid="Taskpane.Url" />
+
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="MTGroup">
+                <Label resid="Group.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16" />
+                  <bt:Image size="32" resid="Icon.32x32" />
+                  <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+
+                <!-- Show Taskpane Button -->
+                <Control xsi:type="Button" id="ShowTaskpane">
+                  <Label resid="ShowTaskpane.Label" />
+                  <Supertip>
+                    <Title resid="ShowTaskpane.Label" />
+                    <Description resid="ShowTaskpane.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>MTTaskpane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+
+                <!-- Menu Dropdown -->
+                <Control xsi:type="Menu" id="MTMenu">
+                  <Label resid="Menu.Label" />
+                  <Supertip>
+                    <Title resid="Menu.Label" />
+                    <Description resid="Menu.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Items>
+                    <Item id="MenuLogin">
+                      <Label resid="Menu.Login.Label" />
+                      <Supertip>
+                        <Title resid="Menu.Login.Label" />
+                        <Description resid="Menu.Login.Tooltip" />
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="Icon.16x16" />
+                        <bt:Image size="32" resid="Icon.32x32" />
+                        <bt:Image size="80" resid="Icon.80x80" />
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>loginCommand</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="MenuLogout">
+                      <Label resid="Menu.Logout.Label" />
+                      <Supertip>
+                        <Title resid="Menu.Logout.Label" />
+                        <Description resid="Menu.Logout.Tooltip" />
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="Icon.16x16" />
+                        <bt:Image size="32" resid="Icon.32x32" />
+                        <bt:Image size="80" resid="Icon.80x80" />
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>logoutCommand</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="MenuSettings">
+                      <Label resid="Menu.Settings.Label" />
+                      <Supertip>
+                        <Title resid="Menu.Settings.Label" />
+                        <Description resid="Menu.Settings.Tooltip" />
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="Icon.16x16" />
+                        <bt:Image size="32" resid="Icon.32x32" />
+                        <bt:Image size="80" resid="Icon.80x80" />
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>settingsCommand</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="MenuRefresh">
+                      <Label resid="Menu.Refresh.Label" />
+                      <Supertip>
+                        <Title resid="Menu.Refresh.Label" />
+                        <Description resid="Menu.Refresh.Tooltip" />
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="Icon.16x16" />
+                        <bt:Image size="32" resid="Icon.32x32" />
+                        <bt:Image size="80" resid="Icon.80x80" />
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>refreshCommand</FunctionName>
+                      </Action>
+                    </Item>
+                  </Items>
+                </Control>
+
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png" />
+        <bt:Image id="Icon.64x64" DefaultValue="https://localhost:3000/assets/icon-64.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html" />
+        <bt:Url id="Functions.Script.Url" DefaultValue="https://localhost:3000/functions.js" />
+        <bt:Url id="Functions.Metadata.Url" DefaultValue="https://localhost:3000/functions.json" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Functions.Namespace" DefaultValue="MT" />
+        <bt:String id="Group.Label" DefaultValue="MT Data Connector" />
+        <bt:String id="ShowTaskpane.Label" DefaultValue="Show Panel" />
+        <bt:String id="Menu.Label" DefaultValue="MT Menu" />
+        <bt:String id="Menu.Login.Label" DefaultValue="Sign In" />
+        <bt:String id="Menu.Logout.Label" DefaultValue="Sign Out" />
+        <bt:String id="Menu.Settings.Label" DefaultValue="Settings" />
+        <bt:String id="Menu.Refresh.Label" DefaultValue="Refresh Data" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="ShowTaskpane.Tooltip" DefaultValue="Opens the MT Data Connector panel." />
+        <bt:String id="Menu.Tooltip" DefaultValue="MT Data Connector actions and settings." />
+        <bt:String id="Menu.Login.Tooltip" DefaultValue="Sign in with your Microsoft Account." />
+        <bt:String id="Menu.Logout.Tooltip" DefaultValue="Sign out of the current session." />
+        <bt:String id="Menu.Settings.Tooltip" DefaultValue="Configure API endpoint and preferences." />
+        <bt:String id="Menu.Refresh.Tooltip" DefaultValue="Refresh all MT function data in the workbook." />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
