@@ -63,6 +63,87 @@ body {
   display: inline-block;
 }
 
+/* Update Banner */
+.update-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: var(--radius);
+  background: #fff4ce;
+  border: 1px solid #f0d06e;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.update-banner-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.update-banner-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.update-banner-title {
+  font-weight: 600;
+  color: #7a6400;
+  margin-bottom: 2px;
+}
+
+.update-banner-content .ms-font-s {
+  color: #5c4b00;
+}
+
+.update-banner-link {
+  display: inline-block;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  color: var(--color-primary);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.update-banner-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #7a6400;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+  border-radius: 3px;
+}
+
+.update-banner-dismiss:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.btn--update {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 12px;
+  background: #7a6400;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn--update:hover {
+  background: #5c4b00;
+}
+
 /* Auth Status */
 .auth-status {
   display: flex;

@@ -14,6 +14,13 @@ import { initAuth, signIn, signOut } from "../auth/authConfig";
 import { getAuthState, onAuthChange, type AuthState } from "../shared/state";
 import { getConfig, setApiBaseUrl, setAuthentikBaseUrl } from "../shared/config";
 import { ADDIN_VERSION, BUILD_TIMESTAMP } from "../shared/version";
+import {
+  startPeriodicCheck,
+  onUpdateAvailable,
+  getUpdateInfo,
+  getUpdateInstructions,
+  type UpdateInfo,
+} from "../shared/updateChecker";
 
 Office.onReady(async () => {
   try {
@@ -24,6 +31,9 @@ Office.onReady(async () => {
 
   renderApp();
   onAuthChange(() => renderApp());
+
+  startPeriodicCheck();
+  onUpdateAvailable(() => renderApp());
 });
 
 function renderApp(): void {
@@ -32,6 +42,7 @@ function renderApp(): void {
 
   const state = getAuthState();
   const config = getConfig();
+  const updateInfo = getUpdateInfo();
 
   root.innerHTML = `
     <div class="taskpane">
@@ -39,6 +50,8 @@ function renderApp(): void {
         <h1 class="ms-font-xl">MT Data Connector</h1>
         <p class="ms-font-m taskpane-subtitle">Excel Add-in for MT API Services</p>
       </header>
+
+      ${renderUpdateBanner(updateInfo)}
 
       <section class="taskpane-section">
         <h2 class="ms-font-l">Authentication</h2>
@@ -63,6 +76,29 @@ function renderApp(): void {
   `;
 
   attachEventHandlers();
+}
+
+function renderUpdateBanner(info: Readonly<UpdateInfo>): string {
+  if (!info.available || !info.latestVersion) return "";
+
+  const releaseLink = info.releaseNotesUrl
+    ? `<a href="${info.releaseNotesUrl}" target="_blank" rel="noopener" class="update-banner-link">Release notes</a>`
+    : "";
+
+  return `
+    <div class="update-banner" role="alert">
+      <div class="update-banner-icon">&#x26A0;</div>
+      <div class="update-banner-content">
+        <p class="ms-font-m-plus update-banner-title">Update Available</p>
+        <p class="ms-font-s">
+          v${info.latestVersion} is available (you have v${info.currentVersion})
+        </p>
+        ${releaseLink}
+        <button id="btn-update-details" class="btn btn--update">How to Update</button>
+      </div>
+      <button id="btn-dismiss-update" class="update-banner-dismiss" aria-label="Dismiss">&times;</button>
+    </div>
+  `;
 }
 
 function renderAuthSection(state: Readonly<AuthState>): string {
@@ -183,6 +219,8 @@ function attachEventHandlers(): void {
   const btnSignIn = document.getElementById("btn-signin");
   const btnSignOut = document.getElementById("btn-signout");
   const btnSave = document.getElementById("btn-save-settings");
+  const btnUpdateDetails = document.getElementById("btn-update-details");
+  const btnDismissUpdate = document.getElementById("btn-dismiss-update");
 
   btnSignIn?.addEventListener("click", async () => {
     btnSignIn.setAttribute("disabled", "true");
@@ -220,5 +258,19 @@ function attachEventHandlers(): void {
 
     alert("Settings saved. Functions will use the new endpoint on next recalculation.");
     renderApp();
+  });
+
+  btnUpdateDetails?.addEventListener("click", () => {
+    const info = getUpdateInfo();
+    if (info.latestVersion) {
+      alert(getUpdateInstructions(info.latestVersion));
+    }
+  });
+
+  btnDismissUpdate?.addEventListener("click", () => {
+    const banner = document.querySelector(".update-banner");
+    if (banner) {
+      (banner as HTMLElement).style.display = "none";
+    }
   });
 }

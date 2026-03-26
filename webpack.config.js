@@ -9,6 +9,13 @@ const packageJson = require("./package.json");
 const isProduction = process.env.NODE_ENV === "production";
 const buildTimestamp = new Date().toISOString();
 
+const versionManifest = JSON.stringify({
+  version: packageJson.version,
+  buildTimestamp,
+  minimumSupported: packageJson.minimumSupportedVersion || packageJson.version,
+  releaseNotesUrl: packageJson.homepage || "",
+}, null, 2);
+
 module.exports = {
   entry: {
     taskpane: "./src/taskpane/taskpane.ts",
@@ -71,6 +78,18 @@ module.exports = {
         { from: "manifest.xml", to: "manifest.xml" },
       ],
     }),
+    {
+      apply(compiler) {
+        compiler.hooks.thisCompilation.tap("EmitVersionJson", (compilation) => {
+          compilation.hooks.processAssets.tap(
+            { name: "EmitVersionJson", stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
+            () => {
+              compilation.emitAsset("version.json", new webpack.sources.RawSource(versionManifest));
+            }
+          );
+        });
+      },
+    },
   ],
   devServer: {
     static: {
