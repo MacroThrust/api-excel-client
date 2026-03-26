@@ -6,6 +6,8 @@
  * at runtime via the taskpane Settings panel, persisted in localStorage.
  */
 
+import { ADDIN_HOST } from "./version";
+
 const STORAGE_KEY_API_BASE = "mt_api_base_url";
 const STORAGE_KEY_AUTHENTIK_BASE = "mt_authentik_base_url";
 
@@ -56,8 +58,7 @@ export function getConfig(): AddinConfig {
     // Target API
     apiBaseUrl: getStoredOrDefault(STORAGE_KEY_API_BASE, "https://api.example.com/v1"),
 
-    // Add-in hosting origin (used for auth redirects)
-    addinHost: "https://localhost:3000",
+    addinHost: ADDIN_HOST,
   };
 }
 

@@ -8,6 +8,7 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const packageJson = require("./package.json");
 const isProduction = process.env.NODE_ENV === "production";
 const buildTimestamp = new Date().toISOString();
+const addinHost = (process.env.ADDIN_HOST || "https://localhost:3000").replace(/\/+$/, "");
 
 const versionManifest = JSON.stringify({
   version: packageJson.version,
@@ -56,6 +57,7 @@ module.exports = {
       __ADDIN_VERSION__: JSON.stringify(packageJson.version),
       __ADDIN_NAME__: JSON.stringify(packageJson.name),
       __BUILD_TIMESTAMP__: JSON.stringify(buildTimestamp),
+      __ADDIN_HOST__: JSON.stringify(addinHost),
     }),
     new CleanWebpackPlugin(),
     new CustomFunctionsMetadataPlugin({
@@ -75,7 +77,15 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: "assets", to: "assets" },
-        { from: "manifest.xml", to: "manifest.xml" },
+        {
+          from: "manifest.xml",
+          to: "manifest.xml",
+          transform(content) {
+            return content
+              .toString()
+              .replace(/https:\/\/localhost:3000/g, addinHost);
+          },
+        },
       ],
     }),
     {
