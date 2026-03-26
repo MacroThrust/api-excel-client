@@ -192,3 +192,8 @@ body {
   border-top: 1px solid var(--color-border);
   color: var(--color-text-secondary);
 }
+
+.taskpane-build {
+  margin-top: 2px;
+  opacity: 0.6;
+}

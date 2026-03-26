@@ -13,6 +13,7 @@ import "./taskpane.css";
 import { initAuth, signIn, signOut } from "../auth/authConfig";
 import { getAuthState, onAuthChange, type AuthState } from "../shared/state";
 import { getConfig, setApiBaseUrl, setAuthentikBaseUrl } from "../shared/config";
+import { ADDIN_VERSION, BUILD_TIMESTAMP } from "../shared/version";
 
 Office.onReady(async () => {
   try {
@@ -55,7 +56,8 @@ function renderApp(): void {
       </section>
 
       <footer class="taskpane-footer">
-        <p class="ms-font-s">MT Data Connector v1.0.0</p>
+        <p class="ms-font-s">MT Data Connector v${ADDIN_VERSION}</p>
+        <p class="ms-font-xs taskpane-build">Built ${BUILD_TIMESTAMP}</p>
       </footer>
     </div>
   `;
@@ -148,6 +150,11 @@ function renderFunctionReference(): string {
       name: "=MT.MTSTATUS",
       args: '()',
       desc: "Check connection and auth status.",
+    },
+    {
+      name: "=MT.MTVERSION",
+      args: '()',
+      desc: "Returns add-in version and build info.",
     },
     {
       name: "=MT.MTAPICALL",

@@ -10,6 +10,7 @@
  */
 
 import { apiRequest, ApiError } from "../shared/apiClient";
+import { ADDIN_VERSION, ADDIN_NAME, BUILD_TIMESTAMP } from "../shared/version";
 
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                    */
@@ -283,10 +284,23 @@ async function mtApiCall(
   }, invocation);
 }
 
+/**
+ * Returns the add-in version, name, and build timestamp embedded at compile time.
+ * @customfunction mtVersion
+ */
+async function mtVersion(): Promise<string[][]> {
+  return [
+    ["name", ADDIN_NAME],
+    ["version", ADDIN_VERSION],
+    ["built", BUILD_TIMESTAMP],
+  ];
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Registration                                                              */
 /* -------------------------------------------------------------------------- */
 
+CustomFunctions.associate("MTVERSION", mtVersion);
 CustomFunctions.associate("MTGETSOURCES", mtGetSources);
 CustomFunctions.associate("MTGETRECORDS", mtGetRecords);
 CustomFunctions.associate("MTGETRECORD", mtGetRecord);

@@ -1,10 +1,13 @@
 const path = require("path");
+const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const CustomFunctionsMetadataPlugin = require("custom-functions-metadata-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
+const packageJson = require("./package.json");
 const isProduction = process.env.NODE_ENV === "production";
+const buildTimestamp = new Date().toISOString();
 
 module.exports = {
   entry: {
@@ -42,6 +45,11 @@ module.exports = {
     ],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      __ADDIN_VERSION__: JSON.stringify(packageJson.version),
+      __ADDIN_NAME__: JSON.stringify(packageJson.name),
+      __BUILD_TIMESTAMP__: JSON.stringify(buildTimestamp),
+    }),
     new CleanWebpackPlugin(),
     new CustomFunctionsMetadataPlugin({
       output: "functions.json",
