@@ -1,0 +1,37 @@
+{
+  "name": "mt-excel-addin",
+  "version": "1.0.0",
+  "description": "Excel Add-in with custom functions (mt* UDFs) using Microsoft Account authentication via Authentik OAuth2",
+  "private": true,
+  "scripts": {
+    "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "dev": "webpack serve --mode development",
+    "start": "webpack serve --mode development --open",
+    "lint": "eslint src/**/*.ts",
+    "validate": "office-addin-manifest validate manifest.xml"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "^3.27.0",
+    "office-addin-manifest": "^1.13.0"
+  },
+  "devDependencies": {
+    "@types/custom-functions-runtime": "^1.6.11",
+    "@types/office-js": "^1.0.421",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "custom-functions-metadata-plugin": "^1.0.0",
+    "html-webpack-plugin": "^5.6.3",
+    "mini-css-extract-plugin": "^2.9.2",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.0",
+    "webpack": "^5.97.0",
+    "webpack-cli": "^6.0.0",
+    "webpack-dev-server": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
