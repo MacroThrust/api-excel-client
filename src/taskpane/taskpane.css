@@ -266,6 +266,44 @@ body {
   color: var(--color-text-secondary);
 }
 
+/* HTTP Method Badges */
+.method-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.method-badge--get {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.method-badge--post {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.method-badge--put {
+  background: #fef7e0;
+  color: #e37400;
+}
+
+.method-badge--delete {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.method-badge--patch {
+  background: #f3e8fd;
+  color: #8430ce;
+}
+
 /* Footer */
 .taskpane-footer {
   text-align: center;

@@ -7,10 +7,29 @@
  *
  * JSDoc tags are used by custom-functions-metadata-plugin to auto-generate
  * the functions.json metadata file at build time.
+ *
+ * --- Dynamic OpenAPI-driven functions ---
+ *
+ * In addition to the hard-coded UDFs below, the add-in can dynamically
+ * generate Excel functions from an API's OpenAPI specification. After
+ * authentication, call =MT.MTRELOADFUNCTIONS() or use the ribbon
+ * "Reload Functions" command to:
+ *   1. Fetch the OpenAPI spec from the configured API
+ *   2. Determine which endpoints the user/client is permitted to call
+ *      (based on OAuth2 scopes in the token vs. security requirements)
+ *   3. Register only the permitted endpoints as callable custom functions
+ *
+ * Functions are named with verb prefixes: mtGet..., mtPost..., mtPut...,
+ * mtDelete..., mtPatch... derived from the HTTP method + operationId or path.
  */
 
 import { apiRequest, ApiError } from "../shared/apiClient";
 import { ADDIN_VERSION, ADDIN_NAME, BUILD_TIMESTAMP } from "../shared/version";
+import {
+  reloadFunctions as reloadDynamicFunctions,
+  getRegistryState,
+  type RegisteredFunction,
+} from "./dynamicRegistry";
 
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                    */
@@ -297,6 +316,79 @@ async function mtVersion(): Promise<string[][]> {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  OpenAPI-driven dynamic functions                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Reloads dynamic functions from the API's OpenAPI specification.
+ * Fetches the spec, checks user permissions, and registers only the
+ * permitted endpoints as callable custom functions. Call this after
+ * signing in or when you want to refresh the available functions.
+ * @customfunction mtReloadFunctions
+ */
+async function mtReloadFunctions(): Promise<string[][]> {
+  try {
+    const result = await reloadDynamicFunctions();
+    if (result.error) {
+      return [
+        ["status", "Error"],
+        ["message", result.error],
+      ];
+    }
+    return [
+      ["status", "OK"],
+      ["total_endpoints", String(result.total)],
+      ["permitted", String(result.permitted)],
+      ["denied", String(result.denied)],
+      ["message", result.permitted > 0
+        ? `${result.permitted} function(s) registered. Use =MT.<name>() to call them.`
+        : "No endpoints found or no permissions. Check your API and OpenAPI spec."],
+    ];
+  } catch (err) {
+    return [
+      ["status", "Error"],
+      ["message", err instanceof Error ? err.message : "Unknown error"],
+    ];
+  }
+}
+
+/**
+ * Lists all dynamically discovered API endpoints and whether
+ * they are available to the current user based on their scopes.
+ * Call mtReloadFunctions first to populate the list.
+ * @customfunction mtListEndpoints
+ */
+async function mtListEndpoints(): Promise<string[][]> {
+  const state = getRegistryState();
+  if (!state.loaded) {
+    return [["No OpenAPI spec loaded. Call =MT.MTRELOADFUNCTIONS() first."]];
+  }
+  if (state.functions.length === 0) {
+    return [["No endpoints found in the OpenAPI spec."]];
+  }
+
+  const header: string[] = [
+    "Function",
+    "Method",
+    "Path",
+    "Permitted",
+    "Scopes Required",
+    "Description",
+  ];
+
+  const rows = state.functions.map((f: RegisteredFunction) => [
+    `=MT.${f.endpoint.functionId}`,
+    f.endpoint.method,
+    f.endpoint.path,
+    f.registered ? "Yes" : "No",
+    f.endpoint.requiredScopes.join(", ") || "(none)",
+    f.endpoint.summary || f.endpoint.description,
+  ]);
+
+  return [header, ...rows];
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Registration                                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -309,3 +401,5 @@ CustomFunctions.associate("MTSEARCH", mtSearch);
 CustomFunctions.associate("MTGETSUMMARY", mtGetSummary);
 CustomFunctions.associate("MTSTATUS", mtStatus);
 CustomFunctions.associate("MTAPICALL", mtApiCall);
+CustomFunctions.associate("MTRELOADFUNCTIONS", mtReloadFunctions);
+CustomFunctions.associate("MTLISTENDPOINTS", mtListEndpoints);

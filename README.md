@@ -53,16 +53,20 @@ Hosted on GitHub Pages:
 
 - **Microsoft Account SSO** via MSAL.js (Nested App Authentication with Dialog API fallback)
 - **Authentik OAuth2 integration** — token exchange or authorization code flow with PKCE
-- **9 async custom functions** (UDFs) prefixed with `mt`, all supporting dynamic array spilling
+- **Dynamic OpenAPI-driven functions** — auto-generates Excel custom functions from an API's OpenAPI spec, filtered by user/client OAuth2 scopes
+- **Permission-based function visibility** — only endpoints the user's token permits are registered; unauthorized endpoints return `#NAME?`
+- **9+ async custom functions** (UDFs) prefixed with `mt`, all supporting dynamic array spilling
 - **Shared runtime** — auth tokens are shared between taskpane, custom functions, and ribbon commands
 - **Configurable API endpoint** — change the target API URL at runtime via the Settings panel
-- **Ribbon menu** with Sign In, Sign Out, Settings, and Refresh Data commands
+- **Ribbon menu** with Sign In, Sign Out, Settings, Refresh Data, and Reload API Functions commands
 - **Automatic update notifications** — detects new deployments and shows user instructions
 - **CI/CD via GitHub Actions** — builds and deploys to GitHub Pages on every push to `main`
 
 ## Custom Functions
 
 All functions are available under the `MT` namespace in Excel:
+
+### Built-in Functions
 
 | Function | Description |
 |---|---|
@@ -75,8 +79,58 @@ All functions are available under the `MT` namespace in Excel:
 | `=MT.MTSTATUS()` | Check connection and auth status |
 | `=MT.MTVERSION()` | Returns embedded add-in name, version, and build timestamp |
 | `=MT.MTAPICALL(path, [p1Name], [p1Val], [p2Name], [p2Val], [p3Name], [p3Val])` | Generic API call |
+| `=MT.MTRELOADFUNCTIONS()` | Reload dynamic functions from OpenAPI spec |
+| `=MT.MTLISTENDPOINTS()` | List all discovered endpoints and permissions |
 
 All functions are async, support dynamic array spilling, use cancelable invocations, and return inline error messages instead of `#VALUE!`.
+
+### Dynamic OpenAPI Functions
+
+After signing in, the add-in can automatically generate custom functions from the API's **OpenAPI 3.x specification**. These functions are permission-aware: only endpoints that the user's OAuth2 token scopes allow will be registered.
+
+**How it works:**
+
+1. **Sign in** — the add-in acquires an OAuth2 token with specific scopes
+2. **Reload** — call `=MT.MTRELOADFUNCTIONS()`, click "Reload API Functions" in the ribbon, or click the button in the taskpane (also triggers automatically after sign-in)
+3. The add-in fetches the OpenAPI spec from the API (auto-discovers `/openapi.json`, `/swagger.json`, etc., or uses a configured URL)
+4. Each endpoint in the spec is mapped to a function named with a **verb prefix**:
+   - `GET /users` → `=MT.MTGETUSERS()`
+   - `POST /users` → `=MT.MTPOSTUSERS(jsonBody)`
+   - `DELETE /users/{id}` → `=MT.MTDELETEUSERS(id)`
+   - If the endpoint has an `operationId`, it is used: `GET /users` with `operationId: listUsers` → `=MT.MTGETLISTUSERS()`
+5. The spec's `security` requirements are compared against the user's token scopes — only matching endpoints get registered
+6. Endpoints the user cannot access are silently skipped (they return `#NAME?` if typed manually)
+
+**Function naming convention:**
+
+| HTTP Method | Prefix | Example |
+|---|---|---|
+| GET | `mtGet...` | `=MT.MTGETUSERS()` |
+| POST | `mtPost...` | `=MT.MTPOSTUSERS(jsonBody)` |
+| PUT | `mtPut...` | `=MT.MTPUTUSERS(id, jsonBody)` |
+| DELETE | `mtDelete...` | `=MT.MTDELETEUSERS(id)` |
+| PATCH | `mtPatch...` | `=MT.MTPATCHUSERS(id, jsonBody)` |
+
+**Parameters** are derived from the OpenAPI spec:
+- Path parameters become required function arguments
+- Query parameters become optional function arguments
+- Request bodies become an optional `jsonBody` string argument (pass JSON)
+
+**OpenAPI spec discovery:** The add-in tries these paths in order: `/openapi.json`, `/api/openapi.json`, `/swagger.json`, `/api/swagger.json`, `/docs/openapi.json`, `/api-docs`, `/v1/openapi.json`. You can also configure an explicit URL in the Settings panel.
+
+### Build-time Pre-generation (Optional)
+
+For functions to appear in Excel's autocomplete/Insert Function wizard, they must be declared in `functions.json` at build time. To pre-generate metadata for all possible endpoints:
+
+```bash
+# From a local OpenAPI spec file:
+node scripts/generate-openapi-functions.js openapi.json --output dist/functions.json --merge
+
+# From a URL:
+node scripts/generate-openapi-functions.js https://api.example.com/openapi.json --output dist/functions.json --merge
+```
+
+The `--merge` flag preserves the built-in functions already in `functions.json` and adds the OpenAPI-derived ones. Without pre-generation, dynamic functions still work but won't appear in Excel's autocomplete until invoked.
 
 ---
 

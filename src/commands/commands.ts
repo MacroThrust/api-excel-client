@@ -8,6 +8,7 @@
 import { signIn, signOut, initAuth } from "../auth/authConfig";
 import { getAuthState } from "../shared/state";
 import { getConfig, setApiBaseUrl } from "../shared/config";
+import { reloadFunctions } from "../functions/dynamicRegistry";
 
 async function ensureAuthInitialized(): Promise<void> {
   try {
@@ -89,6 +90,36 @@ async function refreshCommand(event: Office.AddinCommands.Event): Promise<void> 
   }
 }
 
+/**
+ * Reload Functions command — fetches the OpenAPI spec and registers
+ * dynamic functions filtered by user permissions/scopes.
+ */
+async function reloadFunctionsCommand(event: Office.AddinCommands.Event): Promise<void> {
+  try {
+    const state = getAuthState();
+    if (!state.isAuthenticated) {
+      showNotification("Reload Functions", "Please sign in first.");
+      event.completed();
+      return;
+    }
+
+    const result = await reloadFunctions();
+    if (result.error) {
+      showNotification("Reload Functions", `Error: ${result.error}`);
+    } else {
+      showNotification(
+        "Functions Loaded",
+        `${result.permitted} of ${result.total} endpoint(s) registered.`
+          + (result.denied > 0 ? ` ${result.denied} denied by scope restrictions.` : ""),
+      );
+    }
+  } catch (err) {
+    showNotification("Reload Functions Failed", err instanceof Error ? err.message : "Unknown error");
+  } finally {
+    event.completed();
+  }
+}
+
 function showNotification(title: string, message: string): void {
   try {
     if (Office.context.mailbox) return;
@@ -103,3 +134,4 @@ function showNotification(title: string, message: string): void {
 (globalThis as Record<string, unknown>).logoutCommand = logoutCommand;
 (globalThis as Record<string, unknown>).settingsCommand = settingsCommand;
 (globalThis as Record<string, unknown>).refreshCommand = refreshCommand;
+(globalThis as Record<string, unknown>).reloadFunctionsCommand = reloadFunctionsCommand;

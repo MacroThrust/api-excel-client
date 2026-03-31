@@ -21,6 +21,13 @@ import {
   getUpdateInstructions,
   type UpdateInfo,
 } from "../shared/updateChecker";
+import {
+  reloadFunctions,
+  getRegistryState,
+  onRegistryChange,
+  setOpenApiSpecUrl,
+  getOpenApiSpecUrl,
+} from "../functions/dynamicRegistry";
 
 Office.onReady(async () => {
   try {
@@ -30,7 +37,18 @@ Office.onReady(async () => {
   }
 
   renderApp();
-  onAuthChange(() => renderApp());
+  onAuthChange(async (state) => {
+    renderApp();
+    if (state.isAuthenticated) {
+      try {
+        await reloadFunctions();
+      } catch (err) {
+        console.warn("Auto-reload of dynamic functions failed:", err);
+      }
+      renderApp();
+    }
+  });
+  onRegistryChange(() => renderApp());
 
   startPeriodicCheck();
   onUpdateAvailable(() => renderApp());
@@ -43,6 +61,7 @@ function renderApp(): void {
   const state = getAuthState();
   const config = getConfig();
   const updateInfo = getUpdateInfo();
+  const registryState = getRegistryState();
 
   root.innerHTML = `
     <div class="taskpane">
@@ -64,7 +83,12 @@ function renderApp(): void {
       </section>
 
       <section class="taskpane-section">
-        <h2 class="ms-font-l">Available Functions</h2>
+        <h2 class="ms-font-l">API Functions (OpenAPI)</h2>
+        ${renderDynamicFunctionsSection(state, registryState)}
+      </section>
+
+      <section class="taskpane-section">
+        <h2 class="ms-font-l">Built-in Functions</h2>
         ${renderFunctionReference()}
       </section>
 
@@ -125,6 +149,7 @@ function renderAuthSection(state: Readonly<AuthState>): string {
 }
 
 function renderSettingsSection(config: ReturnType<typeof getConfig>): string {
+  const specUrl = getOpenApiSpecUrl() ?? "";
   return `
     <div class="settings-form">
       <label class="ms-font-s" for="input-api-url">API Base URL</label>
@@ -145,9 +170,101 @@ function renderSettingsSection(config: ReturnType<typeof getConfig>): string {
         placeholder="https://authentik.example.com"
       />
 
+      <label class="ms-font-s" for="input-openapi-url">OpenAPI Spec URL <span class="ms-font-xs">(optional — auto-discovered if blank)</span></label>
+      <input
+        id="input-openapi-url"
+        type="url"
+        class="input"
+        value="${specUrl}"
+        placeholder="https://api.example.com/openapi.json"
+      />
+
       <button id="btn-save-settings" class="btn btn--primary">Save Settings</button>
     </div>
   `;
+}
+
+function renderDynamicFunctionsSection(
+  authState: Readonly<AuthState>,
+  registryState: ReturnType<typeof getRegistryState>,
+): string {
+  if (!authState.isAuthenticated) {
+    return `
+      <p class="ms-font-s">Sign in to discover API functions from the OpenAPI specification.</p>
+    `;
+  }
+
+  if (!registryState.loaded) {
+    return `
+      <p class="ms-font-s">No OpenAPI spec loaded yet.</p>
+      <button id="btn-reload-functions" class="btn btn--primary">Load API Functions</button>
+      <p class="ms-font-xs" style="margin-top:8px;">
+        Or use <code>=MT.MTRELOADFUNCTIONS()</code> in any cell.
+      </p>
+    `;
+  }
+
+  if (registryState.lastError) {
+    return `
+      <div class="auth-status auth-status--disconnected">
+        <div class="status-indicator status-indicator--red"></div>
+        <p class="ms-font-s">${registryState.lastError}</p>
+      </div>
+      <button id="btn-reload-functions" class="btn btn--primary">Retry</button>
+    `;
+  }
+
+  const permitted = registryState.functions.filter((f) => f.registered);
+  const denied = registryState.functions.filter((f) => !f.registered);
+
+  let html = `
+    <div class="auth-status auth-status--connected">
+      <div class="status-indicator status-indicator--green"></div>
+      <div>
+        <p class="ms-font-m-plus"><strong>${registryState.registeredCount}</strong> of ${registryState.endpointCount} endpoints available</p>
+        <p class="ms-font-xs">Last loaded: ${registryState.lastLoadTime ? new Date(registryState.lastLoadTime).toLocaleTimeString() : "never"}</p>
+      </div>
+    </div>
+    <button id="btn-reload-functions" class="btn btn--secondary" style="margin-bottom:12px;">Reload Functions</button>
+  `;
+
+  if (permitted.length > 0) {
+    html += `<div class="function-list">`;
+    for (const f of permitted) {
+      const params = [
+        ...f.endpoint.pathParameters.map((p) => p.required !== false ? p.name : `[${p.name}]`),
+        ...f.endpoint.queryParameters.map((p) => `[${p.name}]`),
+        ...(f.endpoint.hasRequestBody ? ["[jsonBody]"] : []),
+      ].join(", ");
+      html += `
+        <div class="function-card">
+          <code class="function-name">=MT.${f.endpoint.functionId}(${params})</code>
+          <p class="ms-font-xs function-desc"><span class="method-badge method-badge--${f.endpoint.method.toLowerCase()}">${f.endpoint.method}</span> ${f.endpoint.path}</p>
+          <p class="ms-font-s function-desc">${f.endpoint.summary || f.endpoint.description}</p>
+        </div>
+      `;
+    }
+    html += `</div>`;
+  }
+
+  if (denied.length > 0) {
+    html += `
+      <details style="margin-top:8px;">
+        <summary class="ms-font-s">${denied.length} endpoint(s) not permitted</summary>
+        <ul class="ms-font-xs" style="margin:4px 0 0 16px; color: #888;">
+          ${denied.map((f) => `<li>${f.endpoint.method} ${f.endpoint.path} — requires: ${f.endpoint.requiredScopes.join(", ")}</li>`).join("")}
+        </ul>
+      </details>
+    `;
+  }
+
+  html += `
+    <p class="ms-font-xs" style="margin-top:8px;">
+      Use <code>=MT.MTLISTENDPOINTS()</code> to see all endpoints in a cell.
+    </p>
+  `;
+
+  return html;
 }
 
 function renderFunctionReference(): string {
@@ -221,6 +338,7 @@ function attachEventHandlers(): void {
   const btnSave = document.getElementById("btn-save-settings");
   const btnUpdateDetails = document.getElementById("btn-update-details");
   const btnDismissUpdate = document.getElementById("btn-dismiss-update");
+  const btnReloadFunctions = document.getElementById("btn-reload-functions");
 
   btnSignIn?.addEventListener("click", async () => {
     btnSignIn.setAttribute("disabled", "true");
@@ -248,12 +366,16 @@ function attachEventHandlers(): void {
   btnSave?.addEventListener("click", () => {
     const apiInput = document.getElementById("input-api-url") as HTMLInputElement;
     const authentikInput = document.getElementById("input-authentik-url") as HTMLInputElement;
+    const openapiInput = document.getElementById("input-openapi-url") as HTMLInputElement;
 
     if (apiInput?.value) {
       setApiBaseUrl(apiInput.value);
     }
     if (authentikInput?.value) {
       setAuthentikBaseUrl(authentikInput.value);
+    }
+    if (openapiInput) {
+      setOpenApiSpecUrl(openapiInput.value);
     }
 
     alert("Settings saved. Functions will use the new endpoint on next recalculation.");
@@ -271,6 +393,21 @@ function attachEventHandlers(): void {
     const banner = document.querySelector(".update-banner");
     if (banner) {
       (banner as HTMLElement).style.display = "none";
+    }
+  });
+
+  btnReloadFunctions?.addEventListener("click", async () => {
+    btnReloadFunctions.setAttribute("disabled", "true");
+    btnReloadFunctions.textContent = "Loading…";
+    try {
+      const result = await reloadFunctions();
+      if (result.error) {
+        alert(`Failed to load functions: ${result.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      renderApp();
     }
   });
 }

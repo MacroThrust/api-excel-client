@@ -169,6 +169,21 @@
                         <FunctionName>refreshCommand</FunctionName>
                       </Action>
                     </Item>
+                    <Item id="MenuReloadFunctions">
+                      <Label resid="Menu.ReloadFunctions.Label" />
+                      <Supertip>
+                        <Title resid="Menu.ReloadFunctions.Label" />
+                        <Description resid="Menu.ReloadFunctions.Tooltip" />
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="Icon.16x16" />
+                        <bt:Image size="32" resid="Icon.32x32" />
+                        <bt:Image size="80" resid="Icon.80x80" />
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>reloadFunctionsCommand</FunctionName>
+                      </Action>
+                    </Item>
                   </Items>
                 </Control>
 
@@ -200,6 +215,7 @@
         <bt:String id="Menu.Logout.Label" DefaultValue="Sign Out" />
         <bt:String id="Menu.Settings.Label" DefaultValue="Settings" />
         <bt:String id="Menu.Refresh.Label" DefaultValue="Refresh Data" />
+        <bt:String id="Menu.ReloadFunctions.Label" DefaultValue="Reload API Functions" />
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="ShowTaskpane.Tooltip" DefaultValue="Opens the MT Data Connector panel." />
@@ -208,6 +224,7 @@
         <bt:String id="Menu.Logout.Tooltip" DefaultValue="Sign out of the current session." />
         <bt:String id="Menu.Settings.Tooltip" DefaultValue="Configure API endpoint and preferences." />
         <bt:String id="Menu.Refresh.Tooltip" DefaultValue="Refresh all MT function data in the workbook." />
+        <bt:String id="Menu.ReloadFunctions.Tooltip" DefaultValue="Fetch OpenAPI spec and register permitted API functions." />
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
