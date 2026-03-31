@@ -148,6 +148,7 @@ function parseSpec(spec) {
         name: funcName,
         description,
         helpUrl: "",
+        excludeFromAutoComplete: true,
         result: { type: "string", dimensionality: "matrix" },
         parameters,
         options: { cancelable: true, requiresAddress: false },

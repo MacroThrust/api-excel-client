@@ -18,6 +18,8 @@
  *   2. Determine which endpoints the user/client is permitted to call
  *      (based on OAuth2 scopes in the token vs. security requirements)
  *   3. Register only the permitted endpoints as callable custom functions
+ *   4. Use Excel.CustomFunctionManager.setVisibility() (API 1.20+) to
+ *      hide denied functions from autocomplete/Formula Builder entirely
  *
  * Functions are named with verb prefixes: mtGet..., mtPost..., mtPut...,
  * mtDelete..., mtPatch... derived from the HTTP method + operationId or path.

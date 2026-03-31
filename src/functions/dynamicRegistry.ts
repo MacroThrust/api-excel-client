@@ -5,28 +5,19 @@
  * endpoints the current user/client can access based on their OAuth2 scopes,
  * and registers an Excel custom function for each permitted endpoint.
  *
- * Because Excel custom functions require entries in functions.json for the
- * autocomplete/wizard to work, this module also supports a "permissions
- * endpoint" pattern where the API exposes a /permissions or /openapi.json
- * path that can be queried with the user's token.
- *
- * Technical approach — how dynamic registration works in Office custom functions:
+ * Technical approach — how visibility & registration work together:
  *
  *   - `functions.json` (metadata) defines the full universe of possible
- *     functions at build time.  Excel reads this on add-in load.
- *   - `CustomFunctions.associate(id, impl)` connects each metadata entry to
- *     a JS implementation at runtime.
- *   - If we *don't* associate a function ID, calling it in a cell returns
- *     #NAME? — effectively "hidden" for this user.
- *   - After authentication we fetch the OpenAPI spec, filter by scopes,
- *     and only associate the permitted subset.
+ *     functions at build time.  Dynamic (OpenAPI-generated) entries are
+ *     emitted with `"excludeFromAutoComplete": true` so they start hidden.
+ *   - `CustomFunctions.associate(id, impl)` connects each metadata entry
+ *     to a JS implementation at runtime.
+ *   - `Excel.CustomFunctionManager.setVisibility()` (API 1.20+) can then
+ *     show only the permitted functions in autocomplete / Formula Builder,
+ *     and hide the denied ones — so users never see functions they can't
+ *     call.  On older Excel versions that lack this API, denied functions
+ *     simply remain hidden (never associated) and return #NAME?.
  *   - A "reload" function (`mtReloadFunctions`) triggers re-evaluation.
- *
- * For the autocomplete catalog to contain user-specific functions we use
- * a generous build-time pre-generation: the OpenAPI spec is fetched at
- * build time (or provided as a static file) and ALL possible functions are
- * emitted into functions.json.  The runtime filtering then controls which
- * ones are actually callable.
  */
 
 import { apiRequest, ApiError } from "../shared/apiClient";
@@ -235,6 +226,15 @@ function createDynamicFunction(
   };
 }
 
+function createDeniedFunction(
+  ep: ApiEndpoint,
+): (...args: unknown[]) => Promise<string[][]> {
+  const scopes = ep.requiredScopes.join(", ") || "unknown";
+  return async function deniedEndpointFunction(): Promise<string[][]> {
+    return [[`#ERROR: Access denied. ${ep.method} ${ep.path} requires scope(s): ${scopes}`]];
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Core: load spec, filter, register                                 */
 /* ------------------------------------------------------------------ */
@@ -284,14 +284,20 @@ export async function loadAndRegisterFunctions(): Promise<{
       });
     }
 
-    for (const ep of permitted) {
+    const permittedSet = new Set(permitted.map((ep) => ep.functionId));
+
+    for (const ep of allEndpoints) {
       try {
-        const impl = createDynamicFunction(ep);
+        const impl = permittedSet.has(ep.functionId)
+          ? createDynamicFunction(ep)
+          : createDeniedFunction(ep);
         CustomFunctions.associate(ep.functionId, impl);
       } catch (err) {
-        console.warn(`[MT] Failed to register ${ep.functionId}:`, err);
+        console.warn(`[MT] Failed to associate ${ep.functionId}:`, err);
       }
     }
+
+    await updateFunctionVisibility(permitted, allEndpoints);
 
     lastLoadTime = Date.now();
 
@@ -304,6 +310,59 @@ export async function loadAndRegisterFunctions(): Promise<{
     const msg = err instanceof Error ? err.message : "Unknown error";
     lastError = msg;
     return { total: 0, permitted: 0, denied: 0, error: msg };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Visibility control (Excel API 1.20+)                              */
+/* ------------------------------------------------------------------ */
+
+let visibilityApiAvailable: boolean | null = null;
+
+function isVisibilityApiSupported(): boolean {
+  if (visibilityApiAvailable !== null) return visibilityApiAvailable;
+  try {
+    visibilityApiAvailable =
+      typeof Office !== "undefined" &&
+      Office.context?.requirements?.isSetSupported("ExcelApi", "1.20") === true;
+  } catch {
+    visibilityApiAvailable = false;
+  }
+  return visibilityApiAvailable;
+}
+
+async function updateFunctionVisibility(
+  permitted: ApiEndpoint[],
+  all: ApiEndpoint[],
+): Promise<void> {
+  if (!isVisibilityApiSupported()) {
+    console.log("[MT] Excel API 1.20 not available — visibility control skipped.");
+    return;
+  }
+
+  try {
+    const permittedIds = permitted.map((ep) => ep.functionId);
+    const deniedIds = all
+      .filter((ep) => !permitted.includes(ep))
+      .map((ep) => ep.functionId);
+
+    await Excel.run(async (context) => {
+      const options: Excel.CustomFunctionVisibilityOptions = {};
+      if (permittedIds.length > 0) {
+        options.show = permittedIds;
+      }
+      if (deniedIds.length > 0) {
+        options.hide = deniedIds;
+      }
+      (Excel as any).CustomFunctionManager.setVisibility(options);
+      await context.sync();
+    });
+
+    console.log(
+      `[MT] Visibility updated: ${permittedIds.length} shown, ${deniedIds.length} hidden.`,
+    );
+  } catch (err) {
+    console.warn("[MT] setVisibility failed (non-fatal):", err);
   }
 }
 

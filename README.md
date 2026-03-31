@@ -98,8 +98,8 @@ After signing in, the add-in can automatically generate custom functions from th
    - `POST /users` → `=MT.MTPOSTUSERS(jsonBody)`
    - `DELETE /users/{id}` → `=MT.MTDELETEUSERS(id)`
    - If the endpoint has an `operationId`, it is used: `GET /users` with `operationId: listUsers` → `=MT.MTGETLISTUSERS()`
-5. The spec's `security` requirements are compared against the user's token scopes — only matching endpoints get registered
-6. Endpoints the user cannot access are silently skipped (they return `#NAME?` if typed manually)
+5. The spec's `security` requirements are compared against the user's token scopes — only matching endpoints become callable
+6. **Denied endpoints are removed from the Excel UI** — on Excel builds that support API 1.20+, `Excel.CustomFunctionManager.setVisibility()` hides unauthorized functions from autocomplete and the Formula Builder entirely. On older Excel versions, denied functions remain hidden from autocomplete (via `excludeFromAutoComplete` in metadata) and return an "Access denied" error if typed manually
 
 **Function naming convention:**
 
