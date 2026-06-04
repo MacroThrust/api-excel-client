@@ -63,7 +63,7 @@ function generateFunctionName(method, pathStr, operationId) {
     const cleanId = operationId
       .replace(/[^a-zA-Z0-9_]/g, "")
       .replace(/^[a-z]/, (c) => c.toUpperCase());
-    return `mt${verb}${cleanId}`;
+    return `${verb}${cleanId}`;
   }
   const pathPart = pathStr
     .split("/")
@@ -71,7 +71,7 @@ function generateFunctionName(method, pathStr, operationId) {
     .map((s) => s.replace(/[^a-zA-Z0-9]/g, ""))
     .map(capitalize)
     .join("");
-  return `mt${verb}${pathPart}`;
+  return `${verb}${pathPart}`;
 }
 
 function mapSchemaToExcelType(schema) {

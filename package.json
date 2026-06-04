@@ -1,7 +1,7 @@
 {
   "name": "mt-excel-addin",
   "version": "1.0.0",
-  "description": "Excel Add-in with custom functions (mt* UDFs) using Microsoft Account authentication via Authentik OAuth2",
+  "description": "Excel Add-in with custom functions (MT.* UDFs) using Microsoft Account authentication via Authentik OAuth2",
   "private": true,
   "scripts": {
     "build": "webpack --mode production",

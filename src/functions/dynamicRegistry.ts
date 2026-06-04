@@ -17,7 +17,7 @@
  *     and hide the denied ones — so users never see functions they can't
  *     call.  On older Excel versions that lack this API, denied functions
  *     simply remain hidden (never associated) and return #NAME?.
- *   - A "reload" function (`mtReloadFunctions`) triggers re-evaluation.
+ *   - A "reload" function (`reloadFunctions` / =MT.RELOADFUNCTIONS()) triggers re-evaluation.
  */
 
 import { apiRequest, ApiError } from "../shared/apiClient";
