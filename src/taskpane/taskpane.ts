@@ -13,7 +13,7 @@ import "./taskpane.css";
 import { initAuth, signIn, signOut } from "../auth/authConfig";
 import { getAuthState, onAuthChange, type AuthState } from "../shared/state";
 import { getConfig, setApiBaseUrl, setAuthentikBaseUrl } from "../shared/config";
-import { ADDIN_VERSION, BUILD_TIMESTAMP } from "../shared/version";
+import { ADDIN_VERSION, ADDIN_HOST, BUILD_TIMESTAMP } from "../shared/version";
 import {
   startPeriodicCheck,
   onUpdateAvailable,
@@ -93,7 +93,10 @@ function renderApp(): void {
       </section>
 
       <footer class="taskpane-footer">
-        <p class="ms-font-s">MT Data Connector v${ADDIN_VERSION}</p>
+        <p class="ms-font-s">
+          <a href="${ADDIN_HOST}/docs/user-guide.html" target="_blank" rel="noopener" class="taskpane-link">User guide</a>
+          · MT Data Connector v${ADDIN_VERSION}
+        </p>
         <p class="ms-font-xs taskpane-build">Built ${BUILD_TIMESTAMP}</p>
       </footer>
     </div>
@@ -199,7 +202,7 @@ function renderDynamicFunctionsSection(
       <p class="ms-font-s">No OpenAPI spec loaded yet.</p>
       <button id="btn-reload-functions" class="btn btn--primary">Load API Functions</button>
       <p class="ms-font-xs" style="margin-top:8px;">
-        Or use <code>=MT.MTRELOADFUNCTIONS()</code> in any cell.
+        Or use <code>=MT.RELOADFUNCTIONS()</code> in any cell.
       </p>
     `;
   }
@@ -260,7 +263,7 @@ function renderDynamicFunctionsSection(
 
   html += `
     <p class="ms-font-xs" style="margin-top:8px;">
-      Use <code>=MT.MTLISTENDPOINTS()</code> to see all endpoints in a cell.
+      Use <code>=MT.LISTENDPOINTS()</code> to see all endpoints in a cell.
     </p>
   `;
 
@@ -270,47 +273,47 @@ function renderDynamicFunctionsSection(
 function renderFunctionReference(): string {
   const functions = [
     {
-      name: "=MT.MTGETSOURCES",
+      name: "=MT.GETSOURCES",
       args: '([filter])',
       desc: "List available data sources.",
     },
     {
-      name: "=MT.MTGETRECORDS",
+      name: "=MT.GETRECORDS",
       args: '(source, [limit], [offset], [filter])',
       desc: "Fetch records from a source.",
     },
     {
-      name: "=MT.MTGETRECORD",
+      name: "=MT.GETRECORD",
       args: '(source, recordId)',
       desc: "Look up a single record by ID.",
     },
     {
-      name: "=MT.MTGETSCHEMA",
+      name: "=MT.GETSCHEMA",
       args: '(source)',
       desc: "Get schema for a data source.",
     },
     {
-      name: "=MT.MTSEARCH",
+      name: "=MT.SEARCH",
       args: '(query, [source], [limit])',
       desc: "Search across data sources.",
     },
     {
-      name: "=MT.MTGETSUMMARY",
+      name: "=MT.GETSUMMARY",
       args: '(source, [metric], [field], [filter])',
       desc: "Aggregate statistics for a source.",
     },
     {
-      name: "=MT.MTSTATUS",
+      name: "=MT.STATUS",
       args: '()',
       desc: "Check connection and auth status.",
     },
     {
-      name: "=MT.MTVERSION",
+      name: "=MT.VERSION",
       args: '()',
       desc: "Returns add-in version and build info.",
     },
     {
-      name: "=MT.MTAPICALL",
+      name: "=MT.APICALL",
       args: '(path, [p1Name], [p1Val], ...)',
       desc: "Generic API call to any endpoint.",
     },

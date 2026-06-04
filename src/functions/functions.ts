@@ -12,7 +12,7 @@
  *
  * In addition to the hard-coded UDFs below, the add-in can dynamically
  * generate Excel functions from an API's OpenAPI specification. After
- * authentication, call =MT.MTRELOADFUNCTIONS() or use the ribbon
+ * authentication, call =MT.RELOADFUNCTIONS() or use the ribbon
  * "Reload Functions" command to:
  *   1. Fetch the OpenAPI spec from the configured API
  *   2. Determine which endpoints the user/client is permitted to call
@@ -21,8 +21,8 @@
  *   4. Use Excel.CustomFunctionManager.setVisibility() (API 1.20+) to
  *      hide denied functions from autocomplete/Formula Builder entirely
  *
- * Functions are named with verb prefixes: mtGet..., mtPost..., mtPut...,
- * mtDelete..., mtPatch... derived from the HTTP method + operationId or path.
+ * Functions are named with HTTP verb prefixes: get..., post..., put...,
+ * delete..., patch... derived from the HTTP method + operationId or path.
  */
 
 import { apiRequest, ApiError } from "../shared/apiClient";
@@ -103,7 +103,7 @@ function formatCellValue(value: unknown): CellValue {
 
 /**
  * Retrieves the list of available data sources from the API.
- * @customfunction mtGetSources
+ * @customfunction getSources
  * @param {string} [filter] Optional filter string to narrow results.
  * @cancelable
  */
@@ -122,7 +122,7 @@ async function mtGetSources(
 
 /**
  * Fetches records from a specific data source.
- * @customfunction mtGetRecords
+ * @customfunction getRecords
  * @param {string} source The data source identifier.
  * @param {number} [limit] Maximum number of records to return.
  * @param {number} [offset] Number of records to skip (for pagination).
@@ -151,7 +151,7 @@ async function mtGetRecords(
 
 /**
  * Looks up a single record by ID from the specified source.
- * @customfunction mtGetRecord
+ * @customfunction getRecord
  * @param {string} source The data source identifier.
  * @param {string} recordId The unique record identifier.
  * @cancelable
@@ -171,7 +171,7 @@ async function mtGetRecord(
 
 /**
  * Retrieves metadata/schema for a given data source.
- * @customfunction mtGetSchema
+ * @customfunction getSchema
  * @param {string} source The data source identifier.
  * @cancelable
  */
@@ -189,7 +189,7 @@ async function mtGetSchema(
 
 /**
  * Executes a search/query against the API and returns matching results.
- * @customfunction mtSearch
+ * @customfunction search
  * @param {string} query The search query string.
  * @param {string} [source] Optional data source to limit the search.
  * @param {number} [limit] Maximum number of results.
@@ -216,7 +216,7 @@ async function mtSearch(
 
 /**
  * Retrieves aggregated/summary statistics for a data source.
- * @customfunction mtGetSummary
+ * @customfunction getSummary
  * @param {string} source The data source identifier.
  * @param {string} [metric] Optional metric name (e.g., "count", "sum", "avg").
  * @param {string} [field] Optional field to aggregate on.
@@ -246,7 +246,7 @@ async function mtGetSummary(
 /**
  * Returns the current authentication status and user info.
  * Useful for verifying connectivity and active session.
- * @customfunction mtStatus
+ * @customfunction status
  */
 async function mtStatus(): Promise<string[][]> {
   try {
@@ -271,7 +271,7 @@ async function mtStatus(): Promise<string[][]> {
 /**
  * Makes a generic API call to a custom endpoint path.
  * This is an escape-hatch for endpoints not covered by the specific mt functions.
- * @customfunction mtApiCall
+ * @customfunction apiCall
  * @param {string} path The API path (e.g., "/custom/endpoint").
  * @param {string} [param1Name] First optional query parameter name.
  * @param {string} [param1Value] First optional query parameter value.
@@ -307,7 +307,7 @@ async function mtApiCall(
 
 /**
  * Returns the add-in version, name, and build timestamp embedded at compile time.
- * @customfunction mtVersion
+ * @customfunction version
  */
 async function mtVersion(): Promise<string[][]> {
   return [
@@ -326,7 +326,7 @@ async function mtVersion(): Promise<string[][]> {
  * Fetches the spec, checks user permissions, and registers only the
  * permitted endpoints as callable custom functions. Call this after
  * signing in or when you want to refresh the available functions.
- * @customfunction mtReloadFunctions
+ * @customfunction reloadFunctions
  */
 async function mtReloadFunctions(): Promise<string[][]> {
   try {
@@ -358,12 +358,12 @@ async function mtReloadFunctions(): Promise<string[][]> {
  * Lists all dynamically discovered API endpoints and whether
  * they are available to the current user based on their scopes.
  * Call mtReloadFunctions first to populate the list.
- * @customfunction mtListEndpoints
+ * @customfunction listEndpoints
  */
 async function mtListEndpoints(): Promise<string[][]> {
   const state = getRegistryState();
   if (!state.loaded) {
-    return [["No OpenAPI spec loaded. Call =MT.MTRELOADFUNCTIONS() first."]];
+    return [["No OpenAPI spec loaded. Call =MT.RELOADFUNCTIONS() first."]];
   }
   if (state.functions.length === 0) {
     return [["No endpoints found in the OpenAPI spec."]];
@@ -394,14 +394,14 @@ async function mtListEndpoints(): Promise<string[][]> {
 /*  Registration                                                              */
 /* -------------------------------------------------------------------------- */
 
-CustomFunctions.associate("MTVERSION", mtVersion);
-CustomFunctions.associate("MTGETSOURCES", mtGetSources);
-CustomFunctions.associate("MTGETRECORDS", mtGetRecords);
-CustomFunctions.associate("MTGETRECORD", mtGetRecord);
-CustomFunctions.associate("MTGETSCHEMA", mtGetSchema);
-CustomFunctions.associate("MTSEARCH", mtSearch);
-CustomFunctions.associate("MTGETSUMMARY", mtGetSummary);
-CustomFunctions.associate("MTSTATUS", mtStatus);
-CustomFunctions.associate("MTAPICALL", mtApiCall);
-CustomFunctions.associate("MTRELOADFUNCTIONS", mtReloadFunctions);
-CustomFunctions.associate("MTLISTENDPOINTS", mtListEndpoints);
+CustomFunctions.associate("VERSION", mtVersion);
+CustomFunctions.associate("GETSOURCES", mtGetSources);
+CustomFunctions.associate("GETRECORDS", mtGetRecords);
+CustomFunctions.associate("GETRECORD", mtGetRecord);
+CustomFunctions.associate("GETSCHEMA", mtGetSchema);
+CustomFunctions.associate("SEARCH", mtSearch);
+CustomFunctions.associate("GETSUMMARY", mtGetSummary);
+CustomFunctions.associate("STATUS", mtStatus);
+CustomFunctions.associate("APICALL", mtApiCall);
+CustomFunctions.associate("RELOADFUNCTIONS", mtReloadFunctions);
+CustomFunctions.associate("LISTENDPOINTS", mtListEndpoints);

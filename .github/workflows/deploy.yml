@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test user guide build
+        run: npm run test:docs
+
       - name: Build for GitHub Pages
         env:
           NODE_ENV: production

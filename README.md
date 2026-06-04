@@ -4,6 +4,15 @@ An Excel Office Add-in that connects to a third-party API protected by [Authenti
 
 The add-in is hosted as a static site on **GitHub Pages** and deployed automatically via **GitHub Actions** on every push to `main`.
 
+## Documentation
+
+| Audience | Where to read |
+|----------|----------------|
+| **End users** (install, sign in, formulas) | [docs/user-guide.md](docs/user-guide.md) — HTML is generated at build time and published at `https://<owner>.github.io/<repo>/docs/user-guide.html` |
+| **Developers / admins** (build, config, CI) | This README |
+
+The user guide is copied into `dist/docs/` on every build, so it ships on GitHub Pages next to `manifest.xml` and the add-in bundles. The task pane includes a **User guide** link to that URL.
+
 ## Architecture
 
 ```
@@ -12,7 +21,7 @@ The add-in is hosted as a static site on **GitHub Pages** and deployed automatic
 │                                                         │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │  Taskpane UI  │  │ Custom Funcs │  │ Ribbon Menu  │  │
-│  │  (Settings,   │  │ (mt* UDFs)   │  │ (Sign In,    │  │
+│  │  (Settings,   │  │ (MT.* UDFs)  │  │ (Sign In,    │  │
 │  │   Auth, Ref)  │  │              │  │  Refresh)    │  │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
 │         │                 │                  │          │
@@ -46,6 +55,7 @@ Hosted on GitHub Pages:
     ├── auth-dialog.*.js       ← Auth dialog bundle
     ├── version.json           ← Version manifest (for update detection)
     ├── manifest.xml           ← Office Add-in manifest (URLs rewritten at build)
+    ├── docs/                  ← User guide (HTML + markdown)
     └── assets/                ← Icons
 ```
 
@@ -55,7 +65,7 @@ Hosted on GitHub Pages:
 - **Authentik OAuth2 integration** — token exchange or authorization code flow with PKCE
 - **Dynamic OpenAPI-driven functions** — auto-generates Excel custom functions from an API's OpenAPI spec, filtered by user/client OAuth2 scopes
 - **Permission-based function visibility** — only endpoints the user's token permits are registered; unauthorized endpoints return `#NAME?`
-- **9+ async custom functions** (UDFs) prefixed with `mt`, all supporting dynamic array spilling
+- **9+ async custom functions** (UDFs) under the `MT` namespace, all supporting dynamic array spilling
 - **Shared runtime** — auth tokens are shared between taskpane, custom functions, and ribbon commands
 - **Configurable API endpoint** — change the target API URL at runtime via the Settings panel
 - **Ribbon menu** with Sign In, Sign Out, Settings, Refresh Data, and Reload API Functions commands
@@ -70,17 +80,17 @@ All functions are available under the `MT` namespace in Excel:
 
 | Function | Description |
 |---|---|
-| `=MT.MTGETSOURCES([filter])` | List available data sources |
-| `=MT.MTGETRECORDS(source, [limit], [offset], [filter])` | Fetch records from a source |
-| `=MT.MTGETRECORD(source, recordId)` | Look up a single record by ID |
-| `=MT.MTGETSCHEMA(source)` | Get schema/metadata for a source |
-| `=MT.MTSEARCH(query, [source], [limit])` | Search across data sources |
-| `=MT.MTGETSUMMARY(source, [metric], [field], [filter])` | Aggregated statistics |
-| `=MT.MTSTATUS()` | Check connection and auth status |
-| `=MT.MTVERSION()` | Returns embedded add-in name, version, and build timestamp |
-| `=MT.MTAPICALL(path, [p1Name], [p1Val], [p2Name], [p2Val], [p3Name], [p3Val])` | Generic API call |
-| `=MT.MTRELOADFUNCTIONS()` | Reload dynamic functions from OpenAPI spec |
-| `=MT.MTLISTENDPOINTS()` | List all discovered endpoints and permissions |
+| `=MT.GETSOURCES([filter])` | List available data sources |
+| `=MT.GETRECORDS(source, [limit], [offset], [filter])` | Fetch records from a source |
+| `=MT.GETRECORD(source, recordId)` | Look up a single record by ID |
+| `=MT.GETSCHEMA(source)` | Get schema/metadata for a source |
+| `=MT.SEARCH(query, [source], [limit])` | Search across data sources |
+| `=MT.GETSUMMARY(source, [metric], [field], [filter])` | Aggregated statistics |
+| `=MT.STATUS()` | Check connection and auth status |
+| `=MT.VERSION()` | Returns embedded add-in name, version, and build timestamp |
+| `=MT.APICALL(path, [p1Name], [p1Val], [p2Name], [p2Val], [p3Name], [p3Val])` | Generic API call |
+| `=MT.RELOADFUNCTIONS()` | Reload dynamic functions from OpenAPI spec |
+| `=MT.LISTENDPOINTS()` | List all discovered endpoints and permissions |
 
 All functions are async, support dynamic array spilling, use cancelable invocations, and return inline error messages instead of `#VALUE!`.
 
@@ -91,13 +101,13 @@ After signing in, the add-in can automatically generate custom functions from th
 **How it works:**
 
 1. **Sign in** — the add-in acquires an OAuth2 token with specific scopes
-2. **Reload** — call `=MT.MTRELOADFUNCTIONS()`, click "Reload API Functions" in the ribbon, or click the button in the taskpane (also triggers automatically after sign-in)
+2. **Reload** — call `=MT.RELOADFUNCTIONS()`, click "Reload API Functions" in the ribbon, or click the button in the taskpane (also triggers automatically after sign-in)
 3. The add-in fetches the OpenAPI spec from the API (auto-discovers `/openapi.json`, `/swagger.json`, etc., or uses a configured URL)
 4. Each endpoint in the spec is mapped to a function named with a **verb prefix**:
-   - `GET /users` → `=MT.MTGETUSERS()`
-   - `POST /users` → `=MT.MTPOSTUSERS(jsonBody)`
-   - `DELETE /users/{id}` → `=MT.MTDELETEUSERS(id)`
-   - If the endpoint has an `operationId`, it is used: `GET /users` with `operationId: listUsers` → `=MT.MTGETLISTUSERS()`
+   - `GET /users` → `=MT.GETUSERS()`
+   - `POST /users` → `=MT.POSTUSERS(jsonBody)`
+   - `DELETE /users/{id}` → `=MT.DELETEUSERS(id)`
+   - If the endpoint has an `operationId`, it is used: `GET /users` with `operationId: listUsers` → `=MT.GETLISTUSERS()`
 5. The spec's `security` requirements are compared against the user's token scopes — only matching endpoints become callable
 6. **Denied endpoints are removed from the Excel UI** — on Excel builds that support API 1.20+, `Excel.CustomFunctionManager.setVisibility()` hides unauthorized functions from autocomplete and the Formula Builder entirely. On older Excel versions, denied functions remain hidden from autocomplete (via `excludeFromAutoComplete` in metadata) and return an "Access denied" error if typed manually
 
@@ -105,11 +115,11 @@ After signing in, the add-in can automatically generate custom functions from th
 
 | HTTP Method | Prefix | Example |
 |---|---|---|
-| GET | `mtGet...` | `=MT.MTGETUSERS()` |
-| POST | `mtPost...` | `=MT.MTPOSTUSERS(jsonBody)` |
-| PUT | `mtPut...` | `=MT.MTPUTUSERS(id, jsonBody)` |
-| DELETE | `mtDelete...` | `=MT.MTDELETEUSERS(id)` |
-| PATCH | `mtPatch...` | `=MT.MTPATCHUSERS(id, jsonBody)` |
+| GET | `get...` | `=MT.GETUSERS()` |
+| POST | `post...` | `=MT.POSTUSERS(jsonBody)` |
+| PUT | `put...` | `=MT.PUTUSERS(id, jsonBody)` |
+| DELETE | `delete...` | `=MT.DELETEUSERS(id)` |
+| PATCH | `patch...` | `=MT.PATCHUSERS(id, jsonBody)` |
 
 **Parameters** are derived from the OpenAPI spec:
 - Path parameters become required function arguments
@@ -154,6 +164,8 @@ The deployed site contains:
 | `auth-dialog.*.js` | Auth dialog bundle |
 | `version.json` | Version manifest for automatic update detection |
 | `manifest.xml` | Office Add-in manifest with all URLs pointing to GitHub Pages |
+| `docs/user-guide.html` | End-user guide HTML (generated from markdown at build time) |
+| `docs/user-guide.md` | User guide source (edit this file) |
 | `assets/` | Add-in icons (16, 32, 64, 80px) |
 
 ### Prerequisites
@@ -263,6 +275,8 @@ Copy to `.env` for local development reference. These values are not used at bui
 
 ## Installing the Add-in in Excel
 
+> **End users:** Step-by-step install and first-run instructions are in the [user guide](docs/user-guide.md).
+
 ### Excel on the Web (Office 365 Online) — Sideloading
 
 1. Open Excel Online at https://www.office.com/launch/excel
@@ -331,6 +345,10 @@ To bump the version for a new release, update the `version` field in `package.js
 ├── tsconfig.json                 # TypeScript configuration
 ├── .env.example                  # Environment variable reference
 ├── assets/                       # Add-in icons (16, 32, 64, 80 px)
+├── docs/
+│   ├── user-guide.md             # End-user guide (source; edit this)
+│   ├── user-guide.html           # Generated by npm run build:docs (gitignored)
+│   └── index.html                # Redirects to user-guide.html
 └── src/
     ├── auth/
     │   ├── authConfig.ts         # MSAL init, NAA + Dialog API auth flows

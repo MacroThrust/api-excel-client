@@ -89,9 +89,9 @@ export interface ApiEndpoint {
   tags: string[];
   hasRequestBody: boolean;
   deprecated: boolean;
-  /** e.g. "mtGetUsers" */
+  /** e.g. "getUsers" */
   functionName: string;
-  /** Uppercase ID for CustomFunctions.associate, e.g. "MTGETUSERS" */
+  /** Uppercase ID for CustomFunctions.associate, e.g. "GETUSERS" */
   functionId: string;
 }
 
@@ -178,7 +178,7 @@ export function generateFunctionName(
     const cleanId = operationId
       .replace(/[^a-zA-Z0-9_]/g, "")
       .replace(/^[a-z]/, (c) => c.toUpperCase());
-    return `mt${verb}${cleanId}`;
+    return `${verb}${cleanId}`;
   }
 
   const pathPart = path
@@ -188,7 +188,7 @@ export function generateFunctionName(
     .map(capitalize)
     .join("");
 
-  return `mt${verb}${pathPart}`;
+  return `${verb}${pathPart}`;
 }
 
 /* ------------------------------------------------------------------ */
