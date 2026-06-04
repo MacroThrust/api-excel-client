@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MT Data Connector — User Guide</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --text: #242424;
+      --muted: #605e5c;
+      --border: #edebe9;
+      --accent: #0078d4;
+      --bg: #faf9f8;
+      --card: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text: #f3f2f1;
+        --muted: #c8c6c4;
+        --border: #3b3a39;
+        --accent: #4da6ff;
+        --bg: #1b1a19;
+        --card: #252423;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .wrap {
+      max-width: 44rem;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { font-size: 1.75rem; margin: 0 0 0.35rem; font-weight: 600; }
+    .subtitle { color: var(--muted); margin: 0; font-size: 1rem; }
+    h2 {
+      font-size: 1.2rem;
+      margin: 2rem 0 0.75rem;
+      font-weight: 600;
+    }
+    h3 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+    p, li { font-size: 0.95rem; }
+    a { color: var(--accent); }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.88em;
+    }
+    code {
+      background: var(--border);
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+    }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      overflow-x: auto;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.65rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: var(--border); font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .note {
+      background: var(--card);
+      border-left: 4px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>MT Data Connector</h1>
+      <p class="subtitle">User guide — using the add-in in Excel</p>
+    </header>
+
+    <p>
+      This page is for people who <strong>use</strong> the add-in in Excel.
+      Developers and admins should read the project README on GitHub.
+    </p>
+
+    <h2>What this add-in does</h2>
+    <p>
+      MT Data Connector pulls data from your organization’s API into Excel with formulas
+      (for example <code>=MT.GETSOURCES()</code>). After sign-in, it can register extra
+      functions from your API’s OpenAPI spec—only for endpoints your account may call.
+    </p>
+
+    <h2>Before you start</h2>
+    <ul>
+      <li>Microsoft Excel (web or desktop with Office Add-ins)</li>
+      <li>The add-in <strong>manifest URL</strong> or a deployment from your IT team</li>
+      <li>Permission to sign in with Microsoft and your organization’s identity provider</li>
+    </ul>
+
+    <h2>Install or open the add-in</h2>
+
+    <h3>Deployed by IT</h3>
+    <ol>
+      <li>Open Excel and a workbook.</li>
+      <li>Go to <strong>Insert</strong> → <strong>Office Add-ins</strong> / <strong>My Add-ins</strong>.</li>
+      <li>Open <strong>MT Data Connector</strong>.</li>
+    </ol>
+
+    <h3>Sideload yourself (Excel on the web)</h3>
+    <ol>
+      <li>Open <a href="https://www.office.com/launch/excel">Excel on the web</a>.</li>
+      <li><strong>Insert</strong> → <strong>Office Add-ins</strong> → <strong>Upload My Add-in</strong>.</li>
+      <li>Paste your manifest URL, for example:</li>
+    </ol>
+    <pre>https://&lt;owner&gt;.github.io/&lt;repo&gt;/manifest.xml</pre>
+
+    <h3>Excel desktop</h3>
+    <p>
+      Download <code>manifest.xml</code> from the same host, then follow your organization’s
+      trusted-catalog or sideload instructions. Restart Excel if required.
+    </p>
+
+    <h2>First-time setup</h2>
+    <ol>
+      <li><strong>Open the task pane</strong> from the ribbon (<strong>MT Data Connector</strong> or <strong>MT Menu</strong>).</li>
+      <li><strong>Sign in</strong> and complete Microsoft and Authentik prompts if shown.</li>
+      <li><strong>Reload API functions</strong> if needed (task pane button, ribbon, or <code>=MT.RELOADFUNCTIONS()</code>).</li>
+      <li><strong>Try a formula</strong>, e.g. <code>=MT.STATUS()</code> or <code>=MT.GETSOURCES()</code>.</li>
+    </ol>
+
+    <h2>Built-in functions</h2>
+    <p>All functions use the <code>MT</code> namespace:</p>
+    <table>
+      <thead>
+        <tr><th>Formula</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>=MT.GETSOURCES([filter])</code></td><td>List data sources</td></tr>
+        <tr><td><code>=MT.GETRECORDS(…)</code></td><td>Fetch records</td></tr>
+        <tr><td><code>=MT.GETRECORD(…)</code></td><td>Single record</td></tr>
+        <tr><td><code>=MT.GETSCHEMA(source)</code></td><td>Source schema</td></tr>
+        <tr><td><code>=MT.SEARCH(…)</code></td><td>Search</td></tr>
+        <tr><td><code>=MT.GETSUMMARY(…)</code></td><td>Aggregates</td></tr>
+        <tr><td><code>=MT.STATUS()</code></td><td>Auth / connection status</td></tr>
+        <tr><td><code>=MT.VERSION()</code></td><td>Add-in version info</td></tr>
+        <tr><td><code>=MT.APICALL(…)</code></td><td>Generic API path</td></tr>
+        <tr><td><code>=MT.RELOADFUNCTIONS()</code></td><td>Reload OpenAPI functions</td></tr>
+        <tr><td><code>=MT.LISTENDPOINTS()</code></td><td>Endpoints and permissions</td></tr>
+      </tbody>
+    </table>
+
+    <h2>API functions (OpenAPI)</h2>
+    <p>
+      After reload, your API may expose functions such as <code>=MT.GETUSERS()</code>.
+      Names follow the HTTP verb and path. Only permitted endpoints are registered.
+    </p>
+
+    <h2>Troubleshooting</h2>
+    <table>
+      <thead>
+        <tr><th>Issue</th><th>Try</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>#NAME?</code></td><td>Load the add-in; run <code>=MT.RELOADFUNCTIONS()</code> and sign in.</td></tr>
+        <tr><td>Not authenticated</td><td>Sign in again from the task pane.</td></tr>
+        <tr><td>No API functions</td><td>Ask IT about API scopes and OpenAPI configuration.</td></tr>
+        <tr><td>Stale add-in after update</td><td>Hard-refresh (web) or clear Office cache (desktop).</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <strong>In Excel:</strong> the task pane lists built-in and dynamic functions while you work.
+    </div>
+
+    <footer>
+      <p>
+        Markdown source: <code>docs/user-guide.md</code> in the repository.
+        This HTML file is published with the add-in on GitHub Pages.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

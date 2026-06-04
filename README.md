@@ -4,6 +4,15 @@ An Excel Office Add-in that connects to a third-party API protected by [Authenti
 
 The add-in is hosted as a static site on **GitHub Pages** and deployed automatically via **GitHub Actions** on every push to `main`.
 
+## Documentation
+
+| Audience | Where to read |
+|----------|----------------|
+| **End users** (install, sign in, formulas) | [docs/user-guide.md](docs/user-guide.md) — also published at `https://<owner>.github.io/<repo>/docs/user-guide.html` after deploy |
+| **Developers / admins** (build, config, CI) | This README |
+
+The user guide is copied into `dist/docs/` on every build, so it ships on GitHub Pages next to `manifest.xml` and the add-in bundles. The task pane includes a **User guide** link to that URL.
+
 ## Architecture
 
 ```
@@ -46,6 +55,7 @@ Hosted on GitHub Pages:
     ├── auth-dialog.*.js       ← Auth dialog bundle
     ├── version.json           ← Version manifest (for update detection)
     ├── manifest.xml           ← Office Add-in manifest (URLs rewritten at build)
+    ├── docs/                  ← User guide (HTML + markdown)
     └── assets/                ← Icons
 ```
 
@@ -154,6 +164,8 @@ The deployed site contains:
 | `auth-dialog.*.js` | Auth dialog bundle |
 | `version.json` | Version manifest for automatic update detection |
 | `manifest.xml` | Office Add-in manifest with all URLs pointing to GitHub Pages |
+| `docs/user-guide.html` | End-user guide (browser-readable) |
+| `docs/user-guide.md` | Same guide as markdown (download / reference) |
 | `assets/` | Add-in icons (16, 32, 64, 80px) |
 
 ### Prerequisites
@@ -263,6 +275,8 @@ Copy to `.env` for local development reference. These values are not used at bui
 
 ## Installing the Add-in in Excel
 
+> **End users:** Step-by-step install and first-run instructions are in the [user guide](docs/user-guide.md).
+
 ### Excel on the Web (Office 365 Online) — Sideloading
 
 1. Open Excel Online at https://www.office.com/launch/excel
@@ -331,6 +345,10 @@ To bump the version for a new release, update the `version` field in `package.js
 ├── tsconfig.json                 # TypeScript configuration
 ├── .env.example                  # Environment variable reference
 ├── assets/                       # Add-in icons (16, 32, 64, 80 px)
+├── docs/
+│   ├── user-guide.md             # End-user guide (source)
+│   ├── user-guide.html           # Published on GitHub Pages
+│   └── index.html                # Redirects to user-guide.html
 └── src/
     ├── auth/
     │   ├── authConfig.ts         # MSAL init, NAA + Dialog API auth flows

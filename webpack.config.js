@@ -77,6 +77,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: "assets", to: "assets" },
+        { from: "docs", to: "docs" },
         {
           from: "manifest.xml",
           to: "manifest.xml",

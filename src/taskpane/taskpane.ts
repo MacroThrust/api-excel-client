@@ -13,7 +13,7 @@ import "./taskpane.css";
 import { initAuth, signIn, signOut } from "../auth/authConfig";
 import { getAuthState, onAuthChange, type AuthState } from "../shared/state";
 import { getConfig, setApiBaseUrl, setAuthentikBaseUrl } from "../shared/config";
-import { ADDIN_VERSION, BUILD_TIMESTAMP } from "../shared/version";
+import { ADDIN_VERSION, ADDIN_HOST, BUILD_TIMESTAMP } from "../shared/version";
 import {
   startPeriodicCheck,
   onUpdateAvailable,
@@ -93,7 +93,10 @@ function renderApp(): void {
       </section>
 
       <footer class="taskpane-footer">
-        <p class="ms-font-s">MT Data Connector v${ADDIN_VERSION}</p>
+        <p class="ms-font-s">
+          <a href="${ADDIN_HOST}/docs/user-guide.html" target="_blank" rel="noopener" class="taskpane-link">User guide</a>
+          · MT Data Connector v${ADDIN_VERSION}
+        </p>
         <p class="ms-font-xs taskpane-build">Built ${BUILD_TIMESTAMP}</p>
       </footer>
     </div>

@@ -98,13 +98,17 @@ body {
   color: #5c4b00;
 }
 
+.update-banner-link,
+.taskpane-link {
+  color: var(--color-primary);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
 .update-banner-link {
   display: inline-block;
   margin-top: 4px;
   margin-bottom: 8px;
-  color: var(--color-primary);
-  font-size: 13px;
-  text-decoration: underline;
 }
 
 .update-banner-dismiss {
