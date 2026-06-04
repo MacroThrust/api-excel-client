@@ -152,4 +152,4 @@ Only endpoints your token allows are registered. Others may be hidden or return 
 | **GitHub repository** | `docs/user-guide.md` in the project (this file) |
 | **GitHub Pages** (after deploy) | `https://<owner>.github.io/<repo>/docs/user-guide.html` |
 
-Replace `<owner>` and `<repo>` with your organization’s GitHub Pages host. The HTML version is published automatically with each production build.
+Replace `<owner>` and `<repo>` with your organization’s GitHub Pages host. The HTML page is **generated from this markdown file** when you run `npm run build` (via `npm run build:docs`).
