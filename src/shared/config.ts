@@ -39,24 +39,24 @@ function getStoredOrDefault(key: string, defaultValue: string): string {
 export function getConfig(): AddinConfig {
   const authentikBase = getStoredOrDefault(
     STORAGE_KEY_AUTHENTIK_BASE,
-    "https://authentik.example.com"
+    "https://auth.macrothrust.com"
   );
 
   return {
     // Microsoft Identity Platform (Azure AD)
-    msalClientId: "YOUR_AZURE_APP_CLIENT_ID",
+    msalClientId: "4305925c-6f37-4f8d-b6db-ef43a636479a",
     msalAuthority: "https://login.microsoftonline.com/common",
     msalScopes: ["User.Read", "openid", "profile", "email"],
 
     // Authentik OAuth2 Provider
     authentikBaseUrl: authentikBase,
-    authentikClientId: "YOUR_AUTHENTIK_CLIENT_ID",
+    authentikClientId: "macrothrust-excel",
     authentikAuthorizeEndpoint: `${authentikBase}/application/o/authorize/`,
     authentikTokenEndpoint: `${authentikBase}/application/o/token/`,
-    authentikScopes: "openid profile email",
+    authentikScopes: "openid profile email groups macrothrust-api",
 
     // Target API
-    apiBaseUrl: getStoredOrDefault(STORAGE_KEY_API_BASE, "https://api.example.com/v1"),
+    apiBaseUrl: getStoredOrDefault(STORAGE_KEY_API_BASE, "https://api.macrothrust.com/v1"),
 
     addinHost: ADDIN_HOST,
   };

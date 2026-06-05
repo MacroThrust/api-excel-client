@@ -97,161 +97,270 @@ function formatCellValue(value: unknown): CellValue {
   return JSON.stringify(value);
 }
 
+function optionalNumber(value: number | undefined): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function optionalBoolean(
+  value: boolean | string | undefined,
+  defaultValue?: boolean
+): boolean | undefined {
+  if (value === undefined || value === null) return defaultValue;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const lower = value.toLowerCase();
+    if (lower === "true" || lower === "1") return true;
+    if (lower === "false" || lower === "0") return false;
+  }
+  return defaultValue;
+}
+
+/** Unwrap MacroThrust API list/detail envelopes for tabular Excel output. */
+function flattenApiResponse(data: unknown): unknown {
+  if (typeof data !== "object" || data === null) return data;
+  const obj = data as Record<string, unknown>;
+
+  if (Array.isArray(obj.items)) return obj.items;
+  if (Array.isArray(obj.dataset_ids)) {
+    return obj.dataset_ids.map((id) => ({ dataset_id: id }));
+  }
+  if (Array.isArray(obj.series_ids)) {
+    return obj.series_ids.map((id) => ({ series_id: id }));
+  }
+  if (Array.isArray(obj.datasets)) return obj.datasets;
+  if (Array.isArray(obj.series)) return obj.series;
+  if (Array.isArray(obj.observations)) return obj.observations;
+  if (obj.source && typeof obj.source === "object" && !Array.isArray(obj.source)) {
+    return obj.source;
+  }
+  if (obj.dataset && typeof obj.dataset === "object" && !Array.isArray(obj.dataset)) {
+    return obj.dataset;
+  }
+  if (obj.series && typeof obj.series === "object" && !Array.isArray(obj.series)) {
+    return obj.series;
+  }
+
+  return data;
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Custom Functions (UDFs)                                                   */
 /* -------------------------------------------------------------------------- */
 
 /**
  * Retrieves the list of available data sources from the API.
+ * Maps to GET /sources.
  * @customfunction getSources
- * @param {string} [filter] Optional filter string to narrow results.
+ * @param {number} [offset] Number of sources to skip (pagination).
+ * @param {number} [limit] Maximum number of sources to return (1–500).
  * @cancelable
  */
 async function mtGetSources(
-  filter?: string,
+  offset?: number,
+  limit?: number,
   invocation?: CustomFunctions.CancelableInvocation
 ): Promise<string[][]> {
   return safeApiCall(async () => {
     const data = await apiRequest({
       path: "/sources",
-      params: filter ? { filter } : undefined,
+      params: {
+        offset: optionalNumber(offset),
+        limit: optionalNumber(limit),
+      },
     });
-    return toMatrix(data);
+    return toMatrix(flattenApiResponse(data));
   }, invocation);
 }
 
 /**
- * Fetches records from a specific data source.
- * @customfunction getRecords
- * @param {string} source The data source identifier.
- * @param {number} [limit] Maximum number of records to return.
- * @param {number} [offset] Number of records to skip (for pagination).
- * @param {string} [filter] Optional filter expression.
+ * Looks up a single data source by ID.
+ * Maps to GET /sources/{source_id}.
+ * @customfunction getSource
+ * @param {string} sourceId The data source identifier (e.g. FRED).
  * @cancelable
  */
-async function mtGetRecords(
-  source: string,
+async function mtGetSource(
+  sourceId: string,
+  invocation?: CustomFunctions.CancelableInvocation
+): Promise<string[][]> {
+  return safeApiCall(async () => {
+    const data = await apiRequest({
+      path: `/sources/${encodeURIComponent(sourceId)}`,
+    });
+    return toMatrix(flattenApiResponse(data));
+  }, invocation);
+}
+
+/**
+ * Lists datasets registered under a data source.
+ * Maps to GET /sources/{source_id}/datasets.
+ * @customfunction getSourceDatasets
+ * @param {string} sourceId The data source identifier.
+ * @param {number} [limit] Maximum number of datasets to return (1–500).
+ * @param {number} [offset] Number of datasets to skip (pagination).
+ * @param {boolean} [idsOnly] If true, return only dataset IDs.
+ * @cancelable
+ */
+async function mtGetSourceDatasets(
+  sourceId: string,
   limit?: number,
   offset?: number,
-  filter?: string,
+  idsOnly?: boolean,
   invocation?: CustomFunctions.CancelableInvocation
 ): Promise<string[][]> {
   return safeApiCall(async () => {
     const data = await apiRequest({
-      path: `/sources/${encodeURIComponent(source)}/records`,
+      path: `/sources/${encodeURIComponent(sourceId)}/datasets`,
       params: {
-        limit: limit ?? undefined,
-        offset: offset ?? undefined,
-        filter: filter ?? undefined,
+        limit: optionalNumber(limit),
+        offset: optionalNumber(offset),
+        ids_only: optionalBoolean(idsOnly, false),
       },
     });
-    return toMatrix(data);
+    return toMatrix(flattenApiResponse(data));
   }, invocation);
 }
 
 /**
- * Looks up a single record by ID from the specified source.
- * @customfunction getRecord
- * @param {string} source The data source identifier.
- * @param {string} recordId The unique record identifier.
+ * Lists datasets, optionally filtered by source.
+ * Maps to GET /datasets.
+ * @customfunction getDatasets
+ * @param {string} [sourceId] Filter to datasets under this source.
+ * @param {number} [offset] Number of datasets to skip (pagination).
+ * @param {number} [limit] Maximum number of datasets to return (1–500).
  * @cancelable
  */
-async function mtGetRecord(
-  source: string,
-  recordId: string,
-  invocation?: CustomFunctions.CancelableInvocation
-): Promise<string[][]> {
-  return safeApiCall(async () => {
-    const data = await apiRequest({
-      path: `/sources/${encodeURIComponent(source)}/records/${encodeURIComponent(recordId)}`,
-    });
-    return toMatrix(data);
-  }, invocation);
-}
-
-/**
- * Retrieves metadata/schema for a given data source.
- * @customfunction getSchema
- * @param {string} source The data source identifier.
- * @cancelable
- */
-async function mtGetSchema(
-  source: string,
-  invocation?: CustomFunctions.CancelableInvocation
-): Promise<string[][]> {
-  return safeApiCall(async () => {
-    const data = await apiRequest({
-      path: `/sources/${encodeURIComponent(source)}/schema`,
-    });
-    return toMatrix(data);
-  }, invocation);
-}
-
-/**
- * Executes a search/query against the API and returns matching results.
- * @customfunction search
- * @param {string} query The search query string.
- * @param {string} [source] Optional data source to limit the search.
- * @param {number} [limit] Maximum number of results.
- * @cancelable
- */
-async function mtSearch(
-  query: string,
-  source?: string,
+async function mtGetDatasets(
+  sourceId?: string,
+  offset?: number,
   limit?: number,
   invocation?: CustomFunctions.CancelableInvocation
 ): Promise<string[][]> {
   return safeApiCall(async () => {
     const data = await apiRequest({
-      path: "/search",
+      path: "/datasets",
       params: {
-        q: query,
-        source: source ?? undefined,
-        limit: limit ?? undefined,
+        source_id: sourceId ?? undefined,
+        offset: optionalNumber(offset),
+        limit: optionalNumber(limit),
       },
     });
-    return toMatrix(data);
+    return toMatrix(flattenApiResponse(data));
   }, invocation);
 }
 
 /**
- * Retrieves aggregated/summary statistics for a data source.
- * @customfunction getSummary
- * @param {string} source The data source identifier.
- * @param {string} [metric] Optional metric name (e.g., "count", "sum", "avg").
- * @param {string} [field] Optional field to aggregate on.
- * @param {string} [filter] Optional filter expression.
+ * Looks up a single dataset by ID.
+ * Maps to GET /datasets/{dataset_id}.
+ * @customfunction getDataset
+ * @param {string} datasetId The dataset identifier.
  * @cancelable
  */
-async function mtGetSummary(
-  source: string,
-  metric?: string,
-  field?: string,
-  filter?: string,
+async function mtGetDataset(
+  datasetId: string,
   invocation?: CustomFunctions.CancelableInvocation
 ): Promise<string[][]> {
   return safeApiCall(async () => {
     const data = await apiRequest({
-      path: `/sources/${encodeURIComponent(source)}/summary`,
-      params: {
-        metric: metric ?? undefined,
-        field: field ?? undefined,
-        filter: filter ?? undefined,
-      },
+      path: `/datasets/${encodeURIComponent(datasetId)}`,
     });
-    return toMatrix(data);
+    return toMatrix(flattenApiResponse(data));
   }, invocation);
 }
 
 /**
- * Returns the current authentication status and user info.
- * Useful for verifying connectivity and active session.
+ * Lists series registered under a dataset.
+ * Maps to GET /datasets/{dataset_id}/series.
+ * @customfunction getDatasetSeries
+ * @param {string} datasetId The dataset identifier.
+ * @param {number} [limit] Maximum number of series to return (1–500).
+ * @param {number} [offset] Number of series to skip (pagination).
+ * @param {boolean} [idsOnly] If true, return only series IDs.
+ * @cancelable
+ */
+async function mtGetDatasetSeries(
+  datasetId: string,
+  limit?: number,
+  offset?: number,
+  idsOnly?: boolean,
+  invocation?: CustomFunctions.CancelableInvocation
+): Promise<string[][]> {
+  return safeApiCall(async () => {
+    const data = await apiRequest({
+      path: `/datasets/${encodeURIComponent(datasetId)}/series`,
+      params: {
+        limit: optionalNumber(limit),
+        offset: optionalNumber(offset),
+        ids_only: optionalBoolean(idsOnly, false),
+      },
+    });
+    return toMatrix(flattenApiResponse(data));
+  }, invocation);
+}
+
+/**
+ * Looks up a single series by ID.
+ * Maps to GET /series/{series_id}.
+ * @customfunction getSeries
+ * @param {string} seriesId The series identifier.
+ * @cancelable
+ */
+async function mtGetSeries(
+  seriesId: string,
+  invocation?: CustomFunctions.CancelableInvocation
+): Promise<string[][]> {
+  return safeApiCall(async () => {
+    const data = await apiRequest({
+      path: `/series/${encodeURIComponent(seriesId)}`,
+    });
+    return toMatrix(flattenApiResponse(data));
+  }, invocation);
+}
+
+/**
+ * Fetches observations (time-series values) for a series.
+ * Maps to GET /series/{series_id}/observations.
+ * @customfunction getObservations
+ * @param {string} seriesId The series identifier.
+ * @param {string} [startDate] Inclusive start date (YYYY-MM-DD).
+ * @param {string} [endDate] Inclusive end date (YYYY-MM-DD).
+ * @param {number} [limit] Maximum number of observations (1–10000).
+ * @param {number} [offset] Number of observations to skip (pagination).
+ * @cancelable
+ */
+async function mtGetObservations(
+  seriesId: string,
+  startDate?: string,
+  endDate?: string,
+  limit?: number,
+  offset?: number,
+  invocation?: CustomFunctions.CancelableInvocation
+): Promise<string[][]> {
+  return safeApiCall(async () => {
+    const data = await apiRequest({
+      path: `/series/${encodeURIComponent(seriesId)}/observations`,
+      params: {
+        start_date: startDate ?? undefined,
+        end_date: endDate ?? undefined,
+        limit: optionalNumber(limit),
+        offset: optionalNumber(offset),
+      },
+    });
+    return toMatrix(flattenApiResponse(data));
+  }, invocation);
+}
+
+/**
+ * Checks API connectivity and authentication.
+ * Maps to GET /health.
  * @customfunction status
  */
 async function mtStatus(): Promise<string[][]> {
   try {
-    const data = await apiRequest<{ status: string; user?: string; version?: string }>({
-      path: "/status",
+    const data = await apiRequest<{ status: string }>({
+      path: "/health",
     });
     return toMatrix(data).map((row) => row.map((cell) => String(cell)));
   } catch (err) {
@@ -396,11 +505,13 @@ async function mtListEndpoints(): Promise<string[][]> {
 
 CustomFunctions.associate("VERSION", mtVersion);
 CustomFunctions.associate("GETSOURCES", mtGetSources);
-CustomFunctions.associate("GETRECORDS", mtGetRecords);
-CustomFunctions.associate("GETRECORD", mtGetRecord);
-CustomFunctions.associate("GETSCHEMA", mtGetSchema);
-CustomFunctions.associate("SEARCH", mtSearch);
-CustomFunctions.associate("GETSUMMARY", mtGetSummary);
+CustomFunctions.associate("GETSOURCE", mtGetSource);
+CustomFunctions.associate("GETSOURCEDATASETS", mtGetSourceDatasets);
+CustomFunctions.associate("GETDATASETS", mtGetDatasets);
+CustomFunctions.associate("GETDATASET", mtGetDataset);
+CustomFunctions.associate("GETDATASETSERIES", mtGetDatasetSeries);
+CustomFunctions.associate("GETSERIES", mtGetSeries);
+CustomFunctions.associate("GETOBSERVATIONS", mtGetObservations);
 CustomFunctions.associate("STATUS", mtStatus);
 CustomFunctions.associate("APICALL", mtApiCall);
 CustomFunctions.associate("RELOADFUNCTIONS", mtReloadFunctions);

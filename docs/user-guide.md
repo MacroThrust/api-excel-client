@@ -105,13 +105,15 @@ All built-in functions live under the **`MT`** namespace:
 
 | Function | What it does |
 |----------|----------------|
-| `=MT.GETSOURCES([filter])` | List data sources |
-| `=MT.GETRECORDS(source, [limit], [offset], [filter])` | Fetch records |
-| `=MT.GETRECORD(source, recordId)` | One record by ID |
-| `=MT.GETSCHEMA(source)` | Schema for a source |
-| `=MT.SEARCH(query, [source], [limit])` | Search |
-| `=MT.GETSUMMARY(source, [metric], [field], [filter])` | Aggregates |
-| `=MT.STATUS()` | Connection / auth status |
+| `=MT.GETSOURCES([offset], [limit])` | List data sources |
+| `=MT.GETSOURCE(sourceId)` | One data source by ID |
+| `=MT.GETSOURCEDATASETS(sourceId, …)` | Datasets under a source |
+| `=MT.GETDATASETS([sourceId], …)` | List datasets |
+| `=MT.GETDATASET(datasetId)` | One dataset by ID |
+| `=MT.GETDATASETSERIES(datasetId, …)` | Series under a dataset |
+| `=MT.GETSERIES(seriesId)` | One series by ID |
+| `=MT.GETOBSERVATIONS(seriesId, …)` | Time-series observations |
+| `=MT.STATUS()` | API health / auth check |
 | `=MT.VERSION()` | Add-in name and version |
 | `=MT.APICALL(path, …)` | Generic API path |
 | `=MT.RELOADFUNCTIONS()` | Reload OpenAPI functions |

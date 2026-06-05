@@ -65,7 +65,7 @@ Hosted on GitHub Pages:
 - **Authentik OAuth2 integration** — token exchange or authorization code flow with PKCE
 - **Dynamic OpenAPI-driven functions** — auto-generates Excel custom functions from an API's OpenAPI spec, filtered by user/client OAuth2 scopes
 - **Permission-based function visibility** — only endpoints the user's token permits are registered; unauthorized endpoints return `#NAME?`
-- **9+ async custom functions** (UDFs) under the `MT` namespace, all supporting dynamic array spilling
+- **Catalog-aligned custom functions** — built-in UDFs map to MacroThrust API drill-down: sources → datasets → series → observations
 - **Shared runtime** — auth tokens are shared between taskpane, custom functions, and ribbon commands
 - **Configurable API endpoint** — change the target API URL at runtime via the Settings panel
 - **Ribbon menu** with Sign In, Sign Out, Settings, Refresh Data, and Reload API Functions commands
@@ -80,13 +80,15 @@ All functions are available under the `MT` namespace in Excel:
 
 | Function | Description |
 |---|---|
-| `=MT.GETSOURCES([filter])` | List available data sources |
-| `=MT.GETRECORDS(source, [limit], [offset], [filter])` | Fetch records from a source |
-| `=MT.GETRECORD(source, recordId)` | Look up a single record by ID |
-| `=MT.GETSCHEMA(source)` | Get schema/metadata for a source |
-| `=MT.SEARCH(query, [source], [limit])` | Search across data sources |
-| `=MT.GETSUMMARY(source, [metric], [field], [filter])` | Aggregated statistics |
-| `=MT.STATUS()` | Check connection and auth status |
+| `=MT.GETSOURCES([offset], [limit])` | List data sources (`GET /sources`) |
+| `=MT.GETSOURCE(sourceId)` | Look up one data source (`GET /sources/{id}`) |
+| `=MT.GETSOURCEDATASETS(sourceId, [limit], [offset], [idsOnly])` | Datasets under a source (`GET /sources/{id}/datasets`) |
+| `=MT.GETDATASETS([sourceId], [offset], [limit])` | List datasets (`GET /datasets`) |
+| `=MT.GETDATASET(datasetId)` | Look up one dataset (`GET /datasets/{id}`) |
+| `=MT.GETDATASETSERIES(datasetId, [limit], [offset], [idsOnly])` | Series under a dataset (`GET /datasets/{id}/series`) |
+| `=MT.GETSERIES(seriesId)` | Look up one series (`GET /series/{id}`) |
+| `=MT.GETOBSERVATIONS(seriesId, [startDate], [endDate], [limit], [offset])` | Time-series observations (`GET /series/{id}/observations`) |
+| `=MT.STATUS()` | Check API health and auth (`GET /health`) |
 | `=MT.VERSION()` | Returns embedded add-in name, version, and build timestamp |
 | `=MT.APICALL(path, [p1Name], [p1Val], [p2Name], [p2Val], [p3Name], [p3Val])` | Generic API call |
 | `=MT.RELOADFUNCTIONS()` | Reload dynamic functions from OpenAPI spec |
@@ -357,7 +359,7 @@ To bump the version for a new release, update the `version` field in `package.js
     ├── commands/
     │   └── commands.ts           # Ribbon button/menu command handlers
     ├── functions/
-    │   └── functions.ts          # Custom function definitions (9 UDFs)
+    │   └── functions.ts          # Custom function definitions (catalog UDFs)
     ├── shared/
     │   ├── apiClient.ts          # HTTP client with auth headers
     │   ├── config.ts             # Centralized configuration (uses build-injected host)
