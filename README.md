@@ -265,7 +265,7 @@ Before the add-in will work, you must update the following values in the source 
 |---|---|
 | `<Id>` | A unique GUID for your add-in (generate at https://www.guidgenerator.com) |
 | `<ProviderName>` | Your organization name |
-| `<AppDomains>` | Replace `authentik.example.com` with your Authentik domain |
+| `<AppDomains>` | Replace `auth.macrothrust.com` with your Authentik domain |
 
 The `https://localhost:3000` URLs in the manifest are **automatically rewritten** at build time using the `ADDIN_HOST` environment variable, so you do not need to change them manually.
 

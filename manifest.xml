@@ -7,10 +7,10 @@
   xsi:type="TaskPaneApp">
 
   <!-- BEGIN: Basic Identity -->
-  <Id>00000000-0000-0000-0000-000000000000</Id>
+  <Id>8269bd0d-f5bf-49bc-9c0d-e5dfedf8cbdb</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Your Organization</ProviderName>
-  <DefaultLocale>en-US</DefaultLocale>
+  <ProviderName>MacroThrust</ProviderName>
+  <DefaultLocale>en-GB</DefaultLocale>
   <DisplayName DefaultValue="MT Data Connector" />
   <Description DefaultValue="Excel Add-in for connecting to MT API services via Microsoft Account authentication through Authentik." />
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
@@ -20,7 +20,8 @@
 
   <AppDomains>
     <AppDomain>https://login.microsoftonline.com</AppDomain>
-    <AppDomain>https://authentik.example.com</AppDomain>
+    <AppDomain>https://auth.macrothrust.com</AppDomain>
+    <AppDomain>https://api.macrothrust.com</AppDomain>
   </AppDomains>
 
   <Hosts>

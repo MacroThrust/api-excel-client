@@ -170,7 +170,7 @@ function renderSettingsSection(config: ReturnType<typeof getConfig>): string {
         type="url"
         class="input"
         value="${config.authentikBaseUrl}"
-        placeholder="https://authentik.example.com"
+        placeholder="https://auth.macrothrust.com"
       />
 
       <label class="ms-font-s" for="input-openapi-url">OpenAPI Spec URL <span class="ms-font-xs">(optional — auto-discovered if blank)</span></label>
