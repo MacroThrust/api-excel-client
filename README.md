@@ -8,7 +8,7 @@ The add-in is hosted as a static site on **GitHub Pages** and deployed automatic
 
 | Audience | Where to read |
 |----------|----------------|
-| **End users** (install, sign in, formulas) | [docs/user-guide.md](docs/user-guide.md) — HTML is generated at build time and published at `https://<owner>.github.io/<repo>/docs/user-guide.html` |
+| **End users** (install, sign in, formulas) | [docs/user-guide.md](docs/user-guide.md) — HTML is generated at build time and published at `https://macrothrust.github.io/api-excel-client/docs/user-guide.html` |
 | **Developers / admins** (build, config, CI) | This README |
 
 The user guide is copied into `dist/docs/` on every build, so it ships on GitHub Pages next to `manifest.xml` and the add-in bundles. The task pane includes a **User guide** link to that URL.
@@ -46,7 +46,7 @@ The user guide is copied into `dist/docs/` on every build, so it ships on GitHub
          └───────────────────┘
 
 Hosted on GitHub Pages:
-  https://<owner>.github.io/<repo>/
+  https://macrothrust.github.io/api-excel-client/
     ├── taskpane.html          ← Shared runtime entry
     ├── taskpane.*.js          ← Taskpane + functions + commands bundle
     ├── functions.*.js         ← Custom functions bundle
@@ -152,7 +152,7 @@ This section explains how to serve the add-in from GitHub Pages and what the CI 
 
 ### What Gets Deployed
 
-GitHub Pages serves the contents of the `dist/` folder produced by `npm run build`. The build is parameterized by the `ADDIN_HOST` environment variable, which controls all URLs inside `manifest.xml` and in the runtime configuration. The CI pipeline sets this automatically to `https://<owner>.github.io/<repo>/`.
+GitHub Pages serves the contents of the `dist/` folder produced by `npm run build`. The build is parameterized by the `ADDIN_HOST` environment variable, which controls all URLs inside `manifest.xml` and in the runtime configuration. The CI pipeline sets this automatically to `https://macrothrust.github.io/api-excel-client/`.
 
 The deployed site contains:
 
@@ -186,14 +186,10 @@ The deployed site contains:
 The deployed site will be available at:
 
 ```
-https://<your-github-username>.github.io/<your-repo-name>/
+https://macrothrust.github.io/api-excel-client/
 ```
 
-For example, if the repo is `MacroThrust/excel-api-client`, the URL would be:
-
-```
-https://macrothrust.github.io/excel-api-client/
-```
+Repository: [github.com/MacroThrust/api-excel-client](https://github.com/MacroThrust/api-excel-client)
 
 ### How the CI Pipeline Works
 
@@ -238,7 +234,7 @@ Key details:
 After a successful deployment, the manifest is available at:
 
 ```
-https://<owner>.github.io/<repo>/manifest.xml
+https://macrothrust.github.io/api-excel-client/manifest.xml
 ```
 
 This is the URL you provide when sideloading or deploying the add-in (see [Installing the Add-in](#installing-the-add-in-in-excel)).
@@ -286,7 +282,7 @@ Copy to `.env` for local development reference. These values are not used at bui
 3. Go to **Insert** > **Office Add-ins** > **Upload My Add-in**
 4. Enter the manifest URL:
    ```
-   https://<owner>.github.io/<repo>/manifest.xml
+   https://macrothrust.github.io/api-excel-client/manifest.xml
    ```
    Or download the manifest from that URL and upload the file directly.
 
@@ -295,7 +291,7 @@ Copy to `.env` for local development reference. These values are not used at bui
 Some organizations allow providing the manifest URL directly. Point it at:
 
 ```
-https://<owner>.github.io/<repo>/manifest.xml
+https://macrothrust.github.io/api-excel-client/manifest.xml
 ```
 
 ### Excel Desktop (Windows/Mac)
@@ -314,9 +310,35 @@ For deploying to all users in your organization:
 2. Navigate to **Settings** > **Integrated apps** > **Upload custom apps**
 3. Provide the manifest URL:
    ```
-   https://<owner>.github.io/<repo>/manifest.xml
+   https://macrothrust.github.io/api-excel-client/manifest.xml
    ```
 4. Assign the add-in to the appropriate users or groups
+
+### Removing the Add-in from Excel Online
+
+Excel Online does not offer an **Uninstall** button for add-ins you sideloaded yourself via **Upload My Add-in**. The uploaded manifest is stored in your browser's local storage, so removal means clearing that stored registration.
+
+**Option 1 — Clear browser cache (recommended)**
+
+1. Close all Excel Online tabs.
+2. Clear your browser's cache and site data for the time range when you sideloaded the add-in. See Microsoft's guide: [Clear the Office cache](https://learn.microsoft.com/en-us/office/dev/add-ins/testing/clear-cache).
+3. Close and restart the browser, then reopen Excel Online.
+
+**Option 2 — Clear Excel Online local storage (more targeted)**
+
+If the add-in still appears after a general cache clear:
+
+1. Open Excel Online in your browser.
+2. Open developer tools (for example, `F12` or `Ctrl+Shift+I` in Chrome/Edge).
+3. Go to **Application** (Chrome/Edge) or **Storage** (Firefox) → **Local Storage**.
+4. Select the Excel Online origin (for example, `https://euc-excel.officeapps.live.com` — the hostname may vary by region).
+5. Clear local storage for that origin, then reload the page.
+
+**Notes**
+
+- Sideloaded add-ins are per browser profile. Switching browsers or using a private/incognito window (with no other incognito windows open) starts without the sideloaded manifest.
+- If you re-sideload after changing `manifest.xml`, clear the cache first so Excel Online picks up the updated manifest.
+- Add-ins deployed org-wide via the Microsoft 365 admin center must be removed there (**Settings** > **Integrated apps**), not via browser cache.
 
 ---
 
@@ -467,7 +489,7 @@ Optionally, add a `homepage` field to `package.json` to include a release notes 
 
 ```json
 {
-  "homepage": "https://github.com/<owner>/<repo>/releases"
+  "homepage": "https://github.com/MacroThrust/api-excel-client/releases"
 }
 ```
 

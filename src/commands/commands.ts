@@ -43,6 +43,14 @@ async function loginCommand(event: Office.AddinCommands.Event): Promise<void> {
 async function logoutCommand(event: Office.AddinCommands.Event): Promise<void> {
   try {
     await signOut();
+    try {
+      await Excel.run(async (context) => {
+        context.workbook.application.calculate(Excel.CalculationType.full);
+        await context.sync();
+      });
+    } catch {
+      // Best-effort recalc so MT formulas reflect signed-out state.
+    }
     showNotification("Signed Out", "You have been signed out successfully.");
   } catch (err) {
     showNotification("Sign Out Failed", err instanceof Error ? err.message : "Unknown error");

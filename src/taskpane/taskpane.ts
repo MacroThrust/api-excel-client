@@ -40,15 +40,15 @@ Office.onReady(async () => {
   renderApp();
   onAuthChange(async (state) => {
     renderApp();
+    try {
+      await Excel.run(async (context) => {
+        context.workbook.application.calculate(Excel.CalculationType.full);
+        await context.sync();
+      });
+    } catch (err) {
+      console.warn("Workbook recalculation after auth change failed:", err);
+    }
     if (state.isAuthenticated) {
-      try {
-        await Excel.run(async (context) => {
-          context.workbook.application.calculate(Excel.CalculationType.full);
-          await context.sync();
-        });
-      } catch (err) {
-        console.warn("Workbook recalculation after sign-in failed:", err);
-      }
       try {
         await reloadFunctions();
       } catch (err) {

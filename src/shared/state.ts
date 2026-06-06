@@ -18,16 +18,41 @@ export interface AuthState {
 }
 
 const STORAGE_KEY_AUTH = "mt_auth_state";
+const AUTH_BROADCAST_CHANNEL = "mt_auth_state_sync";
 
-const state: AuthState = {
-  isAuthenticated: false,
-  msAccessToken: null,
-  authentikAccessToken: null,
-  authentikRefreshToken: null,
-  tokenExpiry: null,
-  userDisplayName: null,
-  userEmail: null,
-};
+const state: AuthState = createEmptyAuthState();
+
+const authBroadcast =
+  typeof BroadcastChannel !== "undefined"
+    ? new BroadcastChannel(AUTH_BROADCAST_CHANNEL)
+    : null;
+
+if (authBroadcast) {
+  authBroadcast.addEventListener("message", () => {
+    hydrateFromStorage();
+    notifyListeners();
+  });
+}
+
+function broadcastAuthChange(): void {
+  authBroadcast?.postMessage("changed");
+}
+
+function createEmptyAuthState(): AuthState {
+  return {
+    isAuthenticated: false,
+    msAccessToken: null,
+    authentikAccessToken: null,
+    authentikRefreshToken: null,
+    tokenExpiry: null,
+    userDisplayName: null,
+    userEmail: null,
+  };
+}
+
+function resetInMemoryState(): void {
+  Object.assign(state, createEmptyAuthState());
+}
 
 function persistState(): void {
   try {
@@ -40,10 +65,16 @@ function persistState(): void {
 function hydrateFromStorage(): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_AUTH);
-    if (!raw) return;
+    if (!raw) {
+      resetInMemoryState();
+      return;
+    }
 
     const parsed = JSON.parse(raw) as Partial<AuthState>;
-    if (!parsed.isAuthenticated || !parsed.authentikAccessToken) return;
+    if (!parsed.isAuthenticated || !parsed.authentikAccessToken) {
+      resetInMemoryState();
+      return;
+    }
 
     state.isAuthenticated = true;
     state.msAccessToken = parsed.msAccessToken ?? null;
@@ -53,7 +84,7 @@ function hydrateFromStorage(): void {
     state.userDisplayName = parsed.userDisplayName ?? null;
     state.userEmail = parsed.userEmail ?? null;
   } catch {
-    // Ignore corrupt storage
+    resetInMemoryState();
   }
 }
 
@@ -80,16 +111,11 @@ export function setAuthenticated(params: {
 
   persistState();
   notifyListeners();
+  broadcastAuthChange();
 }
 
 export function clearAuth(): void {
-  state.isAuthenticated = false;
-  state.msAccessToken = null;
-  state.authentikAccessToken = null;
-  state.authentikRefreshToken = null;
-  state.tokenExpiry = null;
-  state.userDisplayName = null;
-  state.userEmail = null;
+  resetInMemoryState();
 
   try {
     localStorage.removeItem(STORAGE_KEY_AUTH);
@@ -98,6 +124,7 @@ export function clearAuth(): void {
   }
 
   notifyListeners();
+  broadcastAuthChange();
 }
 
 function getJwtExpiryMs(token: string): number | null {
@@ -143,6 +170,7 @@ export function updateUserProfile(params: {
   }
   persistState();
   notifyListeners();
+  broadcastAuthChange();
 }
 
 export function updateAccessToken(params: {
@@ -159,6 +187,7 @@ export function updateAccessToken(params: {
   }
   persistState();
   notifyListeners();
+  broadcastAuthChange();
 }
 
 type AuthChangeListener = (state: Readonly<AuthState>) => void;
