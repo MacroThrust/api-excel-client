@@ -40,6 +40,7 @@ function buildQueryString(params: Record<string, string | number | boolean | und
 
 export async function apiRequest<T = unknown>(options: ApiRequestOptions): Promise<T> {
   const config = getConfig();
+  // getAuthState() hydrates from localStorage so custom-function bundles see sign-in.
   const authState = getAuthState();
 
   if (!authState.isAuthenticated || !authState.authentikAccessToken) {

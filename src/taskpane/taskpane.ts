@@ -41,6 +41,14 @@ Office.onReady(async () => {
     renderApp();
     if (state.isAuthenticated) {
       try {
+        await Excel.run(async (context) => {
+          context.workbook.application.calculate(Excel.CalculationType.full);
+          await context.sync();
+        });
+      } catch (err) {
+        console.warn("Workbook recalculation after sign-in failed:", err);
+      }
+      try {
         await reloadFunctions();
       } catch (err) {
         console.warn("Auto-reload of dynamic functions failed:", err);
