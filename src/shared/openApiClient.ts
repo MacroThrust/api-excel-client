@@ -163,8 +163,89 @@ const VERB_MAP: Record<string, string> = {
   patch: "Patch",
 };
 
+/** Maps normalized route keys (e.g. GET:/sources) to built-in Excel function IDs. */
+export const BUILTIN_FUNCTION_BY_ROUTE: Record<string, string> = {
+  "GET:/health": "GETHEALTH",
+  "GET:/sources": "GETSOURCES",
+  "GET:/sources/{source_id}": "GETSOURCE",
+  "GET:/sources/{source_id}/datasets": "GETSOURCEDATASETS",
+  "GET:/datasets": "GETDATASETS",
+  "GET:/datasets/{dataset_id}": "GETDATASET",
+  "GET:/datasets/{dataset_id}/series": "GETDATASETSERIES",
+  "GET:/series/{series_id}": "GETSERIES",
+  "GET:/series/{series_id}/observations": "GETOBSERVATIONS",
+};
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function snakeToPascalCase(value: string): string {
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map(capitalize)
+    .join("");
+}
+
+/** Strip FastAPI auto-generated suffixes like `_v1_sources_get` from operationIds. */
+function normalizeOperationId(operationId: string): string {
+  let name = operationId.replace(/[^a-zA-Z0-9_]/g, "");
+  name = name.replace(/_v\d+_[\w]+_(get|post|put|delete|patch)$/i, "");
+  name = name.replace(/_(get|post|put|delete|patch)$/i, "");
+
+  const parts = name.split("_");
+  const versionIdx = parts.findIndex((part) => /^v\d+$/i.test(part));
+  if (versionIdx > 0) {
+    name = parts.slice(0, versionIdx).join("_");
+  }
+
+  return name;
+}
+
+function operationIdToFunctionName(operationId: string, method: string): string {
+  const normalized = normalizeOperationId(operationId);
+  const verb = VERB_MAP[method.toLowerCase()] ?? capitalize(method.toLowerCase());
+
+  const verbPrefixes: Record<string, string> = {
+    list_: "Get",
+    get_: "Get",
+    create_: "Post",
+    update_: "Put",
+    delete_: "Delete",
+  };
+
+  for (const [prefix, prefixVerb] of Object.entries(verbPrefixes)) {
+    if (normalized.startsWith(prefix)) {
+      return prefixVerb + snakeToPascalCase(normalized.slice(prefix.length));
+    }
+  }
+
+  return verb + snakeToPascalCase(normalized);
+}
+
+/** Remove a leading /vN segment when the configured API base URL already includes it. */
+export function normalizeApiPath(path: string, apiBaseUrl: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const base = apiBaseUrl.replace(/\/+$/, "");
+  const versionMatch = base.match(/\/v(\d+)$/i);
+  if (!versionMatch) return normalizedPath;
+
+  const versionPrefix = `/v${versionMatch[1]}`;
+  if (normalizedPath === versionPrefix) return "/";
+  if (normalizedPath.startsWith(`${versionPrefix}/`)) {
+    return normalizedPath.slice(versionPrefix.length) || "/";
+  }
+  return normalizedPath;
+}
+
+export function routeKey(method: string, path: string): string {
+  const normalizedPath = path.replace(/^\/v\d+(?=\/|$)/i, "") || "/";
+  return `${method.toUpperCase()}:${normalizedPath}`;
+}
+
+export function getBuiltinFunctionId(method: string, path: string): string | undefined {
+  return BUILTIN_FUNCTION_BY_ROUTE[routeKey(method, path)];
 }
 
 export function generateFunctionName(
@@ -172,16 +253,16 @@ export function generateFunctionName(
   path: string,
   operationId?: string,
 ): string {
+  const builtinId = getBuiltinFunctionId(method, path);
+  if (builtinId) return builtinId;
+
   const verb = VERB_MAP[method.toLowerCase()] ?? capitalize(method.toLowerCase());
 
   if (operationId) {
-    const cleanId = operationId
-      .replace(/[^a-zA-Z0-9_]/g, "")
-      .replace(/^[a-z]/, (c) => c.toUpperCase());
-    return `${verb}${cleanId}`;
+    return operationIdToFunctionName(operationId, method);
   }
 
-  const pathPart = path
+  const pathPart = normalizeApiPath(path, "/v1")
     .split("/")
     .filter((s) => s && !s.startsWith("{"))
     .map((s) => s.replace(/[^a-zA-Z0-9]/g, ""))

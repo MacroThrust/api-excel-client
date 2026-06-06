@@ -30,6 +30,7 @@ import {
   fetchOpenApiSpecFromUrl,
   parseEndpoints,
   filterEndpointsByScopes,
+  getBuiltinFunctionId,
 } from "../shared/openApiClient";
 
 /* ------------------------------------------------------------------ */
@@ -74,6 +75,8 @@ function formatCellValue(value: unknown): CellValue {
 export interface RegisteredFunction {
   endpoint: ApiEndpoint;
   registered: boolean;
+  /** True when a hand-written MT.* function already covers this route. */
+  usesBuiltin?: boolean;
 }
 
 let cachedSpec: OpenApiSpec | null = null;
@@ -277,16 +280,25 @@ export async function loadAndRegisterFunctions(): Promise<{
     registeredFunctions.clear();
 
     for (const ep of allEndpoints) {
-      const isPermitted = permitted.includes(ep);
+      const builtinId = getBuiltinFunctionId(ep.method, ep.path);
+      const isPermitted = builtinId ? true : permitted.includes(ep);
       registeredFunctions.set(ep.functionId, {
         endpoint: ep,
         registered: isPermitted,
+        usesBuiltin: !!builtinId,
       });
     }
 
-    const permittedSet = new Set(permitted.map((ep) => ep.functionId));
+    const permittedSet = new Set(
+      permitted
+        .filter((ep) => !getBuiltinFunctionId(ep.method, ep.path))
+        .map((ep) => ep.functionId),
+    );
 
     for (const ep of allEndpoints) {
+      if (getBuiltinFunctionId(ep.method, ep.path)) {
+        continue;
+      }
       try {
         const impl = permittedSet.has(ep.functionId)
           ? createDynamicFunction(ep)
@@ -341,9 +353,11 @@ async function updateFunctionVisibility(
   }
 
   try {
-    const permittedIds = permitted.map((ep) => ep.functionId);
+    const permittedIds = permitted
+      .filter((ep) => !getBuiltinFunctionId(ep.method, ep.path))
+      .map((ep) => ep.functionId);
     const deniedIds = all
-      .filter((ep) => !permitted.includes(ep))
+      .filter((ep) => !permitted.includes(ep) && !getBuiltinFunctionId(ep.method, ep.path))
       .map((ep) => ep.functionId);
 
     await Excel.run(async (context) => {

@@ -27,6 +27,9 @@
 
 import { apiRequest, ApiError } from "../shared/apiClient";
 import { ADDIN_VERSION, ADDIN_NAME, BUILD_TIMESTAMP } from "../shared/version";
+import { getConfig } from "../shared/config";
+import { getAuthState, isTokenExpired } from "../shared/state";
+import { getBuiltinFunctionId } from "../shared/openApiClient";
 import {
   reloadFunctions as reloadDynamicFunctions,
   getRegistryState,
@@ -353,28 +356,94 @@ async function mtGetObservations(
 }
 
 /**
- * Checks API connectivity and authentication.
- * Maps to GET /health.
- * @customfunction status
+ * Returns API health from GET /health (no sign-in required).
+ * @customfunction getHealth
  */
-async function mtStatus(): Promise<string[][]> {
+async function mtGetHealth(): Promise<string[][]> {
   try {
-    const data = await apiRequest<{ status: string }>({
-      path: "/health",
+    const config = getConfig();
+    const response = await fetch(`${config.apiBaseUrl}/health`, {
+      headers: { Accept: "application/json" },
     });
-    return toMatrix(data).map((row) => row.map((cell) => String(cell)));
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 401) {
+
+    if (!response.ok) {
       return [
-        ["status", "Not authenticated"],
-        ["message", "Please sign in via the MT Menu."],
+        ["status", "Error"],
+        ["message", `API request failed: ${response.status} ${response.statusText}`],
       ];
     }
+
+    const data = (await response.json()) as unknown;
+    return toMatrix(data).map((row) => row.map((cell) => String(cell)));
+  } catch (err) {
     return [
       ["status", "Error"],
       ["message", err instanceof Error ? err.message : "Unknown error"],
     ];
   }
+}
+
+/**
+ * Returns sign-in and API access status for the current session.
+ * @customfunction authStatus
+ */
+async function mtAuthStatus(): Promise<string[][]> {
+  const auth = getAuthState();
+
+  if (!auth.isAuthenticated || !auth.authentikAccessToken) {
+    return [
+      ["signed_in", "no"],
+      ["message", "Please sign in via the MT task pane."],
+    ];
+  }
+
+  if (isTokenExpired()) {
+    return [
+      ["signed_in", "yes"],
+      ["token", "expired"],
+      ["user", auth.userDisplayName ?? ""],
+      ["email", auth.userEmail ?? ""],
+      ["message", "Session expired. Please sign in again."],
+    ];
+  }
+
+  try {
+    await apiRequest({
+      path: "/sources",
+      params: { limit: 1 },
+    });
+    return [
+      ["signed_in", "yes"],
+      ["token", "valid"],
+      ["api_access", "ok"],
+      ["user", auth.userDisplayName ?? ""],
+      ["email", auth.userEmail ?? ""],
+    ];
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return [
+        ["signed_in", "yes"],
+        ["token", err.status === 401 ? "rejected" : "present"],
+        ["api_access", "failed"],
+        ["user", auth.userDisplayName ?? ""],
+        ["email", auth.userEmail ?? ""],
+        ["message", err.message],
+      ];
+    }
+    return [
+      ["signed_in", "yes"],
+      ["api_access", "failed"],
+      ["message", err instanceof Error ? err.message : "Unknown error"],
+    ];
+  }
+}
+
+/**
+ * @deprecated Use getHealth instead.
+ * @customfunction status
+ */
+async function mtStatus(): Promise<string[][]> {
+  return mtGetHealth();
 }
 
 /**
@@ -487,14 +556,18 @@ async function mtListEndpoints(): Promise<string[][]> {
     "Description",
   ];
 
-  const rows = state.functions.map((f: RegisteredFunction) => [
-    `=MT.${f.endpoint.functionId}`,
-    f.endpoint.method,
-    f.endpoint.path,
-    f.registered ? "Yes" : "No",
-    f.endpoint.requiredScopes.join(", ") || "(none)",
-    f.endpoint.summary || f.endpoint.description,
-  ]);
+  const rows = state.functions.map((f: RegisteredFunction) => {
+    const displayId =
+      getBuiltinFunctionId(f.endpoint.method, f.endpoint.path) ?? f.endpoint.functionId;
+    return [
+      `=MT.${displayId}`,
+      f.endpoint.method,
+      f.endpoint.path,
+      f.registered ? (f.usesBuiltin ? "Yes (built-in)" : "Yes") : "No",
+      f.endpoint.requiredScopes.join(", ") || "(none)",
+      f.endpoint.summary || f.endpoint.description,
+    ];
+  });
 
   return [header, ...rows];
 }
@@ -512,6 +585,8 @@ CustomFunctions.associate("GETDATASET", mtGetDataset);
 CustomFunctions.associate("GETDATASETSERIES", mtGetDatasetSeries);
 CustomFunctions.associate("GETSERIES", mtGetSeries);
 CustomFunctions.associate("GETOBSERVATIONS", mtGetObservations);
+CustomFunctions.associate("GETHEALTH", mtGetHealth);
+CustomFunctions.associate("AUTHSTATUS", mtAuthStatus);
 CustomFunctions.associate("STATUS", mtStatus);
 CustomFunctions.associate("APICALL", mtApiCall);
 CustomFunctions.associate("RELOADFUNCTIONS", mtReloadFunctions);

@@ -53,24 +53,91 @@ if (!specSource) {
 const VERB_MAP = { get: "Get", post: "Post", put: "Put", delete: "Delete", patch: "Patch" };
 const HTTP_METHODS = ["get", "post", "put", "delete", "patch"];
 
+const BUILTIN_FUNCTION_BY_ROUTE = {
+  "GET:/health": "GETHEALTH",
+  "GET:/sources": "GETSOURCES",
+  "GET:/sources/{source_id}": "GETSOURCE",
+  "GET:/sources/{source_id}/datasets": "GETSOURCEDATASETS",
+  "GET:/datasets": "GETDATASETS",
+  "GET:/datasets/{dataset_id}": "GETDATASET",
+  "GET:/datasets/{dataset_id}/series": "GETDATASETSERIES",
+  "GET:/series/{series_id}": "GETSERIES",
+  "GET:/series/{series_id}/observations": "GETOBSERVATIONS",
+};
+
 function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function snakeToPascalCase(value) {
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map(capitalize)
+    .join("");
+}
+
+function normalizeOperationId(operationId) {
+  let name = operationId.replace(/[^a-zA-Z0-9_]/g, "");
+  name = name.replace(/_v\d+_[\w]+_(get|post|put|delete|patch)$/i, "");
+  name = name.replace(/_(get|post|put|delete|patch)$/i, "");
+
+  const parts = name.split("_");
+  const versionIdx = parts.findIndex((part) => /^v\d+$/i.test(part));
+  if (versionIdx > 0) {
+    name = parts.slice(0, versionIdx).join("_");
+  }
+
+  return name;
+}
+
+function routeKey(method, pathStr) {
+  const normalizedPath = pathStr.replace(/^\/v\d+(?=\/|$)/i, "") || "/";
+  return `${method.toUpperCase()}:${normalizedPath}`;
+}
+
+function getBuiltinFunctionId(method, pathStr) {
+  return BUILTIN_FUNCTION_BY_ROUTE[routeKey(method, pathStr)];
+}
+
+function operationIdToFunctionName(operationId, method) {
+  const normalized = normalizeOperationId(operationId);
+  const verb = VERB_MAP[method] || capitalize(method);
+
+  const verbPrefixes = {
+    list_: "Get",
+    get_: "Get",
+    create_: "Post",
+    update_: "Put",
+    delete_: "Delete",
+  };
+
+  for (const [prefix, prefixVerb] of Object.entries(verbPrefixes)) {
+    if (normalized.startsWith(prefix)) {
+      return prefixVerb + snakeToPascalCase(normalized.slice(prefix.length));
+    }
+  }
+
+  return verb + snakeToPascalCase(normalized);
+}
+
 function generateFunctionName(method, pathStr, operationId) {
+  const builtinId = getBuiltinFunctionId(method, pathStr);
+  if (builtinId) return builtinId;
+
   const verb = VERB_MAP[method] || capitalize(method);
   if (operationId) {
-    const cleanId = operationId
-      .replace(/[^a-zA-Z0-9_]/g, "")
-      .replace(/^[a-z]/, (c) => c.toUpperCase());
-    return `${verb}${cleanId}`;
+    return operationIdToFunctionName(operationId, method);
   }
+
   const pathPart = pathStr
+    .replace(/^\/v\d+(?=\/|$)/i, "")
     .split("/")
     .filter((s) => s && !s.startsWith("{"))
     .map((s) => s.replace(/[^a-zA-Z0-9]/g, ""))
     .map(capitalize)
     .join("");
+
   return `${verb}${pathPart}`;
 }
 
@@ -100,6 +167,9 @@ function parseSpec(spec) {
       if (!op || op.deprecated) continue;
 
       let funcName = generateFunctionName(method, pathStr, op.operationId);
+      if (getBuiltinFunctionId(method, pathStr)) {
+        continue;
+      }
       let suffix = 2;
       const base = funcName;
       while (usedIds.has(funcName.toUpperCase())) {

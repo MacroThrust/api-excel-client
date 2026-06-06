@@ -28,6 +28,7 @@ import {
   setOpenApiSpecUrl,
   getOpenApiSpecUrl,
 } from "../functions/dynamicRegistry";
+import { getBuiltinFunctionId } from "../shared/openApiClient";
 
 Office.onReady(async () => {
   try {
@@ -249,7 +250,7 @@ function renderDynamicFunctionsSection(
       ].join(", ");
       html += `
         <div class="function-card">
-          <code class="function-name">=MT.${f.endpoint.functionId}(${params})</code>
+          <code class="function-name">=MT.${getBuiltinFunctionId(f.endpoint.method, f.endpoint.path) ?? f.endpoint.functionId}(${params})</code>
           <p class="ms-font-xs function-desc"><span class="method-badge method-badge--${f.endpoint.method.toLowerCase()}">${f.endpoint.method}</span> ${f.endpoint.path}</p>
           <p class="ms-font-s function-desc">${f.endpoint.summary || f.endpoint.description}</p>
         </div>
@@ -321,9 +322,19 @@ function renderFunctionReference(): string {
       desc: "Fetch series observations (GET /series/{id}/observations).",
     },
     {
+      name: "=MT.GETHEALTH",
+      args: "()",
+      desc: "API health check (GET /health, no sign-in required).",
+    },
+    {
+      name: "=MT.AUTHSTATUS",
+      args: "()",
+      desc: "Sign-in and API access status for the current session.",
+    },
+    {
       name: "=MT.STATUS",
       args: "()",
-      desc: "Check API health and auth (GET /health).",
+      desc: "Deprecated alias for GETHEALTH.",
     },
     {
       name: "=MT.VERSION",

@@ -100,10 +100,51 @@ export function clearAuth(): void {
   notifyListeners();
 }
 
+function getJwtExpiryMs(token: string): number | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))) as {
+      exp?: number;
+    };
+    return payload.exp ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 export function isTokenExpired(): boolean {
   hydrateFromStorage();
-  if (!state.tokenExpiry) return false;
-  return Date.now() >= state.tokenExpiry;
+  const now = Date.now();
+
+  if (state.tokenExpiry && now >= state.tokenExpiry - 30_000) {
+    return true;
+  }
+
+  if (state.authentikAccessToken) {
+    const jwtExpiry = getJwtExpiryMs(state.authentikAccessToken);
+    if (jwtExpiry && now >= jwtExpiry - 30_000) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function updateAccessToken(params: {
+  authentikAccessToken: string;
+  authentikRefreshToken?: string | null;
+  tokenExpiry?: number | null;
+}): void {
+  state.authentikAccessToken = params.authentikAccessToken;
+  if (params.authentikRefreshToken !== undefined) {
+    state.authentikRefreshToken = params.authentikRefreshToken;
+  }
+  if (params.tokenExpiry !== undefined) {
+    state.tokenExpiry = params.tokenExpiry;
+  }
+  persistState();
+  notifyListeners();
 }
 
 type AuthChangeListener = (state: Readonly<AuthState>) => void;
