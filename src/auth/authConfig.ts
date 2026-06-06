@@ -20,7 +20,14 @@ import {
   createNestablePublicClientApplication,
 } from "@azure/msal-browser";
 import { getConfig } from "../shared/config";
-import { setAuthenticated, clearAuth, getAuthState, updateAccessToken } from "../shared/state";
+import {
+  setAuthenticated,
+  clearAuth,
+  getAuthState,
+  updateAccessToken,
+  updateUserProfile,
+} from "../shared/state";
+import { resolveUserProfile } from "./userProfile";
 
 let msalInstance: IPublicClientApplication | null = null;
 let naaSupported = false;
@@ -50,6 +57,28 @@ export async function initAuth(): Promise<void> {
       naaSupported = false;
     }
   }
+
+  await ensureUserProfile();
+}
+
+/**
+ * Fill in display name / email when missing (e.g. older sessions or userinfo-only claims).
+ */
+export async function ensureUserProfile(): Promise<void> {
+  const auth = getAuthState();
+  if (!auth.isAuthenticated || !auth.authentikAccessToken) return;
+  if (auth.userDisplayName && auth.userEmail) return;
+
+  const profile = await resolveUserProfile({
+    access_token: auth.authentikAccessToken,
+  });
+
+  if (!profile.displayName && !profile.email) return;
+
+  updateUserProfile({
+    userDisplayName: auth.userDisplayName ?? profile.displayName,
+    userEmail: auth.userEmail ?? profile.email,
+  });
 }
 
 export function isNaaSupported(): boolean {

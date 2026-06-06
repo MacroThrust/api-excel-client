@@ -131,6 +131,20 @@ export function isTokenExpired(): boolean {
   return false;
 }
 
+export function updateUserProfile(params: {
+  userDisplayName?: string | null;
+  userEmail?: string | null;
+}): void {
+  if (params.userDisplayName !== undefined) {
+    state.userDisplayName = params.userDisplayName;
+  }
+  if (params.userEmail !== undefined) {
+    state.userEmail = params.userEmail;
+  }
+  persistState();
+  notifyListeners();
+}
+
 export function updateAccessToken(params: {
   authentikAccessToken: string;
   authentikRefreshToken?: string | null;

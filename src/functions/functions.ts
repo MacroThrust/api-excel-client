@@ -25,10 +25,11 @@
  * delete..., patch... derived from the HTTP method + operationId or path.
  */
 
+import { resolveUserProfile } from "../auth/userProfile";
 import { apiRequest, ApiError } from "../shared/apiClient";
 import { ADDIN_VERSION, ADDIN_NAME, BUILD_TIMESTAMP } from "../shared/version";
+import { getAuthState, isTokenExpired, updateUserProfile } from "../shared/state";
 import { getConfig } from "../shared/config";
-import { getAuthState, isTokenExpired } from "../shared/state";
 import { getBuiltinFunctionId } from "../shared/openApiClient";
 import {
   reloadFunctions as reloadDynamicFunctions,
@@ -383,11 +384,25 @@ async function mtGetHealth(): Promise<string[][]> {
   }
 }
 
+async function backfillUserProfileIfNeeded(): Promise<void> {
+  const auth = getAuthState();
+  if (!auth.authentikAccessToken || (auth.userDisplayName && auth.userEmail)) return;
+
+  const profile = await resolveUserProfile({ access_token: auth.authentikAccessToken });
+  if (!profile.displayName && !profile.email) return;
+
+  updateUserProfile({
+    userDisplayName: auth.userDisplayName ?? profile.displayName,
+    userEmail: auth.userEmail ?? profile.email,
+  });
+}
+
 /**
  * Returns sign-in and API access status for the current session.
  * @customfunction authStatus
  */
 async function mtAuthStatus(): Promise<string[][]> {
+  await backfillUserProfileIfNeeded();
   const auth = getAuthState();
 
   if (!auth.isAuthenticated || !auth.authentikAccessToken) {

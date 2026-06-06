@@ -9,6 +9,7 @@
  */
 
 import { getConfig } from "../shared/config";
+import { resolveUserProfile } from "./userProfile";
 
 function generateRandomString(length: number): string {
   const array = new Uint8Array(length);
@@ -104,7 +105,8 @@ async function handleCallback(
       return;
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = (await tokenResponse.json()) as Record<string, unknown>;
+    const profile = await resolveUserProfile(tokenData, config);
 
     Office.context.ui.messageParent(
       JSON.stringify({
@@ -112,8 +114,8 @@ async function handleCallback(
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
         expiresIn: tokenData.expires_in,
-        displayName: tokenData.id_token_claims?.name ?? null,
-        email: tokenData.id_token_claims?.email ?? null,
+        displayName: profile.displayName,
+        email: profile.email,
       })
     );
   } catch (err) {
