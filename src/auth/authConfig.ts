@@ -117,26 +117,17 @@ export async function exchangeTokenWithAuthentik(msAccessToken: string): Promise
 }
 
 /**
- * Full sign-in flow: acquire MS token → exchange with Authentik → update shared state.
+ * Full sign-in flow.
+ *
+ * Uses the Office Dialog API + Authentik authorization-code/PKCE flow. This matches
+ * the redirect URIs registered on the macrothrust-excel OAuth provider and does not
+ * depend on RFC 8693 token exchange (not enabled on Authentik today).
+ *
+ * NAA (MSAL silent/popup) is intentionally not used for sign-in: it produces no
+ * visible UI in Excel and the subsequent token-exchange grant would fail anyway.
  */
 export async function signIn(): Promise<void> {
-  if (naaSupported && msalInstance) {
-    const msResult = await acquireMsToken();
-    const authentikResult = await exchangeTokenWithAuthentik(msResult.accessToken);
-
-    setAuthenticated({
-      msAccessToken: msResult.accessToken,
-      authentikAccessToken: authentikResult.access_token,
-      authentikRefreshToken: authentikResult.refresh_token,
-      tokenExpiry: authentikResult.expires_in
-        ? Date.now() + authentikResult.expires_in * 1000
-        : undefined,
-      userDisplayName: msResult.account?.name ?? undefined,
-      userEmail: msResult.account?.username ?? undefined,
-    });
-  } else {
-    await signInViaDialog();
-  }
+  await signInViaDialog();
 }
 
 /**

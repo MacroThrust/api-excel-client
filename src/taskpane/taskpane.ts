@@ -354,8 +354,9 @@ function attachEventHandlers(): void {
   const btnReloadFunctions = document.getElementById("btn-reload-functions");
 
   btnSignIn?.addEventListener("click", async () => {
-    btnSignIn.setAttribute("disabled", "true");
-    btnSignIn.textContent = "Signing in…";
+    const btn = btnSignIn as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = "Opening sign-in…";
     try {
       await signIn();
     } catch (err) {

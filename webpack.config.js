@@ -8,7 +8,10 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const packageJson = require("./package.json");
 const isProduction = process.env.NODE_ENV === "production";
 const buildTimestamp = new Date().toISOString();
-const addinHost = (process.env.ADDIN_HOST || "https://localhost:3000").replace(/\/+$/, "");
+// Lowercase so OAuth redirect_uri matches Authentik strict redirect URIs.
+const addinHost = (process.env.ADDIN_HOST || "https://localhost:3000")
+  .replace(/\/+$/, "")
+  .toLowerCase();
 
 const versionManifest = JSON.stringify({
   version: packageJson.version,
