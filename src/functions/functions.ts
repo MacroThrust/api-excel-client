@@ -325,7 +325,7 @@ async function mtGetSeries(
 
 /**
  * Fetches observations (time-series values) for a series.
- * Maps to GET /series/{series_id}/observations.
+ * Maps to GET /series/{series_id}/observations-detail.
  * @customfunction getObservations
  * @param {string} seriesId The series identifier.
  * @param {string} [startDate] Inclusive start date (YYYY-MM-DD).
@@ -344,7 +344,7 @@ async function mtGetObservations(
 ): Promise<string[][]> {
   return safeApiCall(async () => {
     const data = await apiRequest({
-      path: `/series/${encodeURIComponent(seriesId)}/observations`,
+      path: `/series/${encodeURIComponent(seriesId)}/observations-detail`,
       params: {
         start_date: startDate ?? undefined,
         end_date: endDate ?? undefined,

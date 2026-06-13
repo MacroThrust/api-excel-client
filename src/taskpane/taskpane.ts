@@ -319,7 +319,7 @@ function renderFunctionReference(): string {
     {
       name: "=MT.GETOBSERVATIONS",
       args: "(seriesId, [startDate], [endDate], [limit], [offset])",
-      desc: "Fetch series observations (GET /series/{id}/observations).",
+      desc: "Fetch series observations (GET /series/{id}/observations-detail).",
     },
     {
       name: "=MT.GETHEALTH",

@@ -87,7 +87,7 @@ All functions are available under the `MT` namespace in Excel:
 | `=MT.GETDATASET(datasetId)` | Look up one dataset (`GET /datasets/{id}`) |
 | `=MT.GETDATASETSERIES(datasetId, [limit], [offset], [idsOnly])` | Series under a dataset (`GET /datasets/{id}/series`) |
 | `=MT.GETSERIES(seriesId)` | Look up one series (`GET /series/{id}`) |
-| `=MT.GETOBSERVATIONS(seriesId, [startDate], [endDate], [limit], [offset])` | Time-series observations (`GET /series/{id}/observations`) |
+| `=MT.GETOBSERVATIONS(seriesId, [startDate], [endDate], [limit], [offset])` | Time-series observations (`GET /series/{id}/observations-detail`) |
 | `=MT.STATUS()` | Check API health and auth (`GET /health`) |
 | `=MT.VERSION()` | Returns embedded add-in name, version, and build timestamp |
 | `=MT.APICALL(path, [p1Name], [p1Val], [p2Name], [p2Val], [p3Name], [p3Val])` | Generic API call |
