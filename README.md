@@ -87,8 +87,8 @@ All functions are available under the `MT` namespace in Excel:
 | `=MT.GETDATASET(datasetId)` | Look up one dataset (`GET /datasets/{id}`) |
 | `=MT.GETDATASETSERIES(datasetId, [limit], [offset], [idsOnly])` | Series under a dataset (`GET /datasets/{id}/series`) |
 | `=MT.GETSERIES(seriesId)` | Look up one series (`GET /series/{id}`) |
-| `=MT.GETOBSERVATIONS(seriesId, [startDate], [endDate], [limit], [offset])` | Date-value pairs (`GET /series/{id}/observations`) |
-| `=MT.GETOBSERVATIONSDETAIL(seriesId, [startDate], [endDate], [limit], [offset])` | Full observation records (`GET /series/{id}/observations-detail`) |
+| `=MT.GETOBSERVATIONS(seriesId, [startDate], [endDate], [limit], [offset], [fetchAll])` | Date-value pairs (`GET /series/{id}/observations`); fetches all pages by default |
+| `=MT.GETOBSERVATIONSDETAIL(seriesId, [startDate], [endDate], [limit], [offset], [fetchAll])` | Full observation records (`GET /series/{id}/observations-detail`); fetches all pages by default |
 | `=MT.STATUS()` | Check API health and auth (`GET /health`) |
 | `=MT.VERSION()` | Returns embedded add-in name, version, and build timestamp |
 | `=MT.APICALL(path, [p1Name], [p1Val], [p2Name], [p2Val], [p3Name], [p3Val])` | Generic API call |
