@@ -173,7 +173,8 @@ export const BUILTIN_FUNCTION_BY_ROUTE: Record<string, string> = {
   "GET:/datasets/{dataset_id}": "GETDATASET",
   "GET:/datasets/{dataset_id}/series": "GETDATASETSERIES",
   "GET:/series/{series_id}": "GETSERIES",
-  "GET:/series/{series_id}/observations-detail": "GETOBSERVATIONS",
+  "GET:/series/{series_id}/observations": "GETOBSERVATIONS",
+  "GET:/series/{series_id}/observations-detail": "GETOBSERVATIONSDETAIL",
 };
 
 function capitalize(s: string): string {

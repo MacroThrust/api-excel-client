@@ -112,7 +112,8 @@ All built-in functions live under the **`MT`** namespace:
 | `=MT.GETDATASET(datasetId)` | One dataset by ID |
 | `=MT.GETDATASETSERIES(datasetId, …)` | Series under a dataset |
 | `=MT.GETSERIES(seriesId)` | One series by ID |
-| `=MT.GETOBSERVATIONS(seriesId, …)` | Time-series observations |
+| `=MT.GETOBSERVATIONS(seriesId, …)` | Date-value pairs for a series |
+| `=MT.GETOBSERVATIONSDETAIL(seriesId, …)` | Full observation records |
 | `=MT.STATUS()` | API health / auth check |
 | `=MT.VERSION()` | Add-in name and version |
 | `=MT.APICALL(path, …)` | Generic API path |

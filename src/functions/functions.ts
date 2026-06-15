@@ -324,8 +324,8 @@ async function mtGetSeries(
 }
 
 /**
- * Fetches observations (time-series values) for a series.
- * Maps to GET /series/{series_id}/observations-detail.
+ * Fetches date-value pairs for a series (lightweight charting/export data).
+ * Maps to GET /series/{series_id}/observations.
  * @customfunction getObservations
  * @param {string} seriesId The series identifier.
  * @param {string} [startDate] Inclusive start date (YYYY-MM-DD).
@@ -335,6 +335,39 @@ async function mtGetSeries(
  * @cancelable
  */
 async function mtGetObservations(
+  seriesId: string,
+  startDate?: string,
+  endDate?: string,
+  limit?: number,
+  offset?: number,
+  invocation?: CustomFunctions.CancelableInvocation
+): Promise<string[][]> {
+  return safeApiCall(async () => {
+    const data = await apiRequest({
+      path: `/series/${encodeURIComponent(seriesId)}/observations`,
+      params: {
+        start_date: startDate ?? undefined,
+        end_date: endDate ?? undefined,
+        limit: optionalNumber(limit),
+        offset: optionalNumber(offset),
+      },
+    });
+    return toMatrix(flattenApiResponse(data));
+  }, invocation);
+}
+
+/**
+ * Fetches full observation records for a series.
+ * Maps to GET /series/{series_id}/observations-detail.
+ * @customfunction getObservationsDetail
+ * @param {string} seriesId The series identifier.
+ * @param {string} [startDate] Inclusive start date (YYYY-MM-DD).
+ * @param {string} [endDate] Inclusive end date (YYYY-MM-DD).
+ * @param {number} [limit] Maximum number of observations (1–10000).
+ * @param {number} [offset] Number of observations to skip (pagination).
+ * @cancelable
+ */
+async function mtGetObservationsDetail(
   seriesId: string,
   startDate?: string,
   endDate?: string,
@@ -600,6 +633,7 @@ CustomFunctions.associate("GETDATASET", mtGetDataset);
 CustomFunctions.associate("GETDATASETSERIES", mtGetDatasetSeries);
 CustomFunctions.associate("GETSERIES", mtGetSeries);
 CustomFunctions.associate("GETOBSERVATIONS", mtGetObservations);
+CustomFunctions.associate("GETOBSERVATIONSDETAIL", mtGetObservationsDetail);
 CustomFunctions.associate("GETHEALTH", mtGetHealth);
 CustomFunctions.associate("AUTHSTATUS", mtAuthStatus);
 CustomFunctions.associate("STATUS", mtStatus);
