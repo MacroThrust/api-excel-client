@@ -47,12 +47,69 @@ Microsoft will **not** email you for credentials. If anything is missing, the su
 
 This is the simplest path when users normally sign in with Microsoft through Authentik.
 
-### Step 1 — Create a Microsoft test account
+### Step 1 — Create a test user in your Azure tenant (recommended)
 
-Create a **new** account reserved for certification, for example:
+If you already registered the add-in’s app in **Microsoft Entra ID** (same place as `msalClientId` in `src/shared/config.ts`), create the certification user **in that same tenant**. That keeps sign-in consistent with your app registration and Authentik Microsoft federation.
 
-- A new **@outlook.com** personal account, or
-- A user in a **Microsoft 365 developer/test tenant**
+#### Where to go (same portal as your app registration)
+
+**Option A — Microsoft Entra admin center (usual)**
+
+1. Open [https://entra.microsoft.com](https://entra.microsoft.com) and sign in as a tenant admin.
+2. Go to **Identity → Users → All users**  
+   (same tenant where you have **Applications → App registrations** for the Excel add-in).
+3. Click **New user → Create new user**.
+4. Fill in:
+   - **User principal name:** e.g. `mt-cert-test@<your-tenant>.onmicrosoft.com`  
+     (or your verified custom domain, e.g. `mt-cert-test@macrothrust.com` if configured).
+   - **Display name:** e.g. `Marketplace Certification Test`
+   - **Password:** choose **Let me create the password** and set a strong password you can share in Partner Center notes.
+   - Uncheck **Require this user to change their password when they first sign in** so Microsoft’s reviewers are not forced through a password-change flow.
+5. Click **Create**.
+6. Copy the **User principal name** and password — you will paste these into **Notes for certification**.
+
+**Option B — Azure portal**
+
+1. Open [https://portal.azure.com](https://portal.azure.com).
+2. Search for **Microsoft Entra ID** (or **Azure Active Directory**) and select your tenant.
+3. **Manage → Users → New user → Create new user** — same fields as above.
+
+**Option C — Microsoft 365 Developer Program sandbox**
+
+If your app registration lives in a **developer sandbox tenant** from the [Microsoft 365 Developer Program](https://developer.microsoft.com/microsoft-365/dev-program):
+
+1. Sign in to [https://developer.microsoft.com/microsoft-365/dev-program](https://developer.microsoft.com/microsoft-365/dev-program) and open your sandbox admin portal.
+2. Go to **Microsoft Entra ID → Users → New user → Create new user** (same steps as Option A).
+3. Sandbox tenants often include sample users; you can still create a dedicated `mt-cert-test@...` user so certification does not share your admin account.
+
+#### Link the test user to your app registration
+
+You do **not** need to add the test user to the app registration’s user list for this add-in (it uses delegated sign-in via Authentik, not per-user app assignment). Do confirm:
+
+| Item | Where to check |
+|------|----------------|
+| App registration | **Entra → Applications → App registrations** → your app (`4305925c-6f37-4f8d-b6db-ef43a636479a` or your client ID) |
+| Supported account types | **Authentication** → if only your org, the test user **must** be in that tenant |
+| API permissions | **API permissions** → `User.Read`, `openid`, `profile`, `email` (as in `config.ts`) — admin consent if required |
+
+#### Authentik must trust the same tenant
+
+Your Authentik **Microsoft / Entra ID** source should use the **same directory (tenant) ID** as this Entra tenant (unless you intentionally use `/common` for multi-tenant). See [Authentik Entra ID OAuth](https://docs.goauthentik.io/users-sources/sources/social-logins/entra-id/oauth/).
+
+When the test user signs in on the Authentik page with **Sign in with Microsoft**, Entra authenticates `mt-cert-test@<your-tenant>.onmicrosoft.com` and Authentik maps that identity to an Authentik user.
+
+#### Optional: assign a Microsoft 365 license
+
+Certification testers usually use **Excel on the web** with their own environment; your test account mainly needs to **authenticate**. If you want the test user to open Excel as that identity:
+
+1. **Microsoft 365 admin center** → **Users → Active users** → select the test user.
+2. **Licenses and apps** → assign a license that includes Excel (e.g. Microsoft 365 Business Basic).
+
+This is optional for Marketplace notes if reviewers only need your credentials for the **Authentik → Microsoft** step inside the add-in.
+
+#### Alternative: personal @outlook.com account
+
+You can still use a new **@outlook.com** account instead of a tenant user. That works when your Entra app registration allows personal Microsoft accounts (**Accounts in any organizational directory and personal Microsoft accounts**) and Authentik’s Microsoft source is configured for `/common`. A **tenant user in the same directory as your app registration** is usually simpler to control and audit.
 
 Use a strong password and store it in your password manager. Example label: `MT Marketplace certification`.
 
@@ -156,8 +213,10 @@ SIGN-IN (required)
 5. Sign in with the test Microsoft account below.
 
 TEST CREDENTIALS (Microsoft — used via Authentik)
-Email: mt-cert-test@outlook.com
-Password: <your test password>
+Email: mt-cert-test@<your-tenant>.onmicrosoft.com
+Password: <password you set in Entra → Users → Create new user>
+
+(User created in the same Microsoft Entra tenant as the app registration.)
 
 This account is pre-authorized for API access. No separate Authentik password is required.
 
@@ -174,7 +233,7 @@ Check **“Uses Microsoft Entra ID / SSO”** on the Partner Center product setu
 
 ## Checklist before submit
 
-- [ ] Dedicated Microsoft test account created (not your personal account)
+- [ ] Dedicated test user created in **Entra → Users** (same tenant as app registration)
 - [ ] Test account added to Authentik group that grants `macrothrust-api`
 - [ ] Redirect URI on `macrothrust-excel` matches production `auth-dialog.html`
 - [ ] Test user can complete sign-in from Excel on the web in a fresh browser
@@ -201,3 +260,4 @@ Check **“Uses Microsoft Entra ID / SSO”** on the Partner Center product setu
 | Date | Notes |
 |------|--------|
 | 2026-06-16 | Initial guide for Marketplace certification test accounts |
+| 2026-06-16 | Added Azure Entra tenant test user steps (same portal as app registration) |

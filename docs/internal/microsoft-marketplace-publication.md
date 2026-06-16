@@ -181,8 +181,11 @@ See docs/internal/authentik-test-accounts.md for how to create and authorize tes
 
 TEST CREDENTIALS (required — reviewers cannot contact us)
 Microsoft account (via Authentik federation):
-  Email: ___________
+  Email: mt-cert-test@<your-tenant>.onmicrosoft.com
   Password: ___________
+
+(Create this user in Microsoft Entra admin center → Identity → Users → Create new user,
+ in the same tenant as your app registration. Uncheck "require password change at first sign-in".)
 
 This account must already be in the Authentik group that grants macrothrust-api scope.
 No separate Authentik password is required unless your login flow shows one.
