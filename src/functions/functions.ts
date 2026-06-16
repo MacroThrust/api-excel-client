@@ -44,7 +44,7 @@ import {
 type CellValue = string | number | boolean;
 
 async function safeApiCall(
-  fn: () => Promise<CellValue[][]>,
+  fn: (signal?: AbortSignal) => Promise<CellValue[][]>,
   invocation?: CustomFunctions.CancelableInvocation
 ): Promise<string[][]> {
   const controller = new AbortController();
@@ -54,7 +54,7 @@ async function safeApiCall(
   }
 
   try {
-    const result = await fn();
+    const result = await fn(controller.signal);
     return result.map((row) => row.map((cell) => String(cell)));
   } catch (err) {
     if (err instanceof ApiError) {
@@ -147,6 +147,40 @@ function flattenApiResponse(data: unknown): unknown {
   }
 
   return data;
+}
+
+const OBSERVATIONS_PAGE_SIZE = 10_000;
+
+/** Fetches every page of observations until a short or empty page is returned. */
+async function fetchAllObservationPages(
+  path: string,
+  params: Record<string, string | number | boolean | undefined>,
+  signal?: AbortSignal
+): Promise<unknown[]> {
+  let offset = 0;
+  const all: unknown[] = [];
+
+  while (true) {
+    if (signal?.aborted) {
+      throw new DOMException("The operation was aborted.", "AbortError");
+    }
+
+    const data = await apiRequest({
+      path,
+      params: { ...params, limit: OBSERVATIONS_PAGE_SIZE, offset },
+      signal,
+    });
+
+    const page = flattenApiResponse(data);
+    if (!Array.isArray(page) || page.length === 0) break;
+
+    all.push(...page);
+    if (page.length < OBSERVATIONS_PAGE_SIZE) break;
+
+    offset += page.length;
+  }
+
+  return all;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -330,8 +364,9 @@ async function mtGetSeries(
  * @param {string} seriesId The series identifier.
  * @param {string} [startDate] Inclusive start date (YYYY-MM-DD).
  * @param {string} [endDate] Inclusive end date (YYYY-MM-DD).
- * @param {number} [limit] Maximum number of observations (1–10000).
- * @param {number} [offset] Number of observations to skip (pagination).
+ * @param {number} [limit] Maximum number of observations per page (1–10000); used when fetchAll is false.
+ * @param {number} [offset] Number of observations to skip (pagination); used when fetchAll is false.
+ * @param {boolean} [fetchAll] When true (default), automatically paginate and return all observations.
  * @cancelable
  */
 async function mtGetObservations(
@@ -340,17 +375,28 @@ async function mtGetObservations(
   endDate?: string,
   limit?: number,
   offset?: number,
+  fetchAll?: boolean,
   invocation?: CustomFunctions.CancelableInvocation
 ): Promise<string[][]> {
-  return safeApiCall(async () => {
+  return safeApiCall(async (signal) => {
+    const path = `/series/${encodeURIComponent(seriesId)}/observations`;
+    const baseParams = {
+      start_date: startDate ?? undefined,
+      end_date: endDate ?? undefined,
+    };
+
+    if (optionalBoolean(fetchAll, true)) {
+      return toMatrix(await fetchAllObservationPages(path, baseParams, signal));
+    }
+
     const data = await apiRequest({
-      path: `/series/${encodeURIComponent(seriesId)}/observations`,
+      path,
       params: {
-        start_date: startDate ?? undefined,
-        end_date: endDate ?? undefined,
+        ...baseParams,
         limit: optionalNumber(limit),
         offset: optionalNumber(offset),
       },
+      signal,
     });
     return toMatrix(flattenApiResponse(data));
   }, invocation);
@@ -363,8 +409,9 @@ async function mtGetObservations(
  * @param {string} seriesId The series identifier.
  * @param {string} [startDate] Inclusive start date (YYYY-MM-DD).
  * @param {string} [endDate] Inclusive end date (YYYY-MM-DD).
- * @param {number} [limit] Maximum number of observations (1–10000).
- * @param {number} [offset] Number of observations to skip (pagination).
+ * @param {number} [limit] Maximum number of observations per page (1–10000); used when fetchAll is false.
+ * @param {number} [offset] Number of observations to skip (pagination); used when fetchAll is false.
+ * @param {boolean} [fetchAll] When true (default), automatically paginate and return all observations.
  * @cancelable
  */
 async function mtGetObservationsDetail(
@@ -373,17 +420,28 @@ async function mtGetObservationsDetail(
   endDate?: string,
   limit?: number,
   offset?: number,
+  fetchAll?: boolean,
   invocation?: CustomFunctions.CancelableInvocation
 ): Promise<string[][]> {
-  return safeApiCall(async () => {
+  return safeApiCall(async (signal) => {
+    const path = `/series/${encodeURIComponent(seriesId)}/observations-detail`;
+    const baseParams = {
+      start_date: startDate ?? undefined,
+      end_date: endDate ?? undefined,
+    };
+
+    if (optionalBoolean(fetchAll, true)) {
+      return toMatrix(await fetchAllObservationPages(path, baseParams, signal));
+    }
+
     const data = await apiRequest({
-      path: `/series/${encodeURIComponent(seriesId)}/observations-detail`,
+      path,
       params: {
-        start_date: startDate ?? undefined,
-        end_date: endDate ?? undefined,
+        ...baseParams,
         limit: optionalNumber(limit),
         offset: optionalNumber(offset),
       },
+      signal,
     });
     return toMatrix(flattenApiResponse(data));
   }, invocation);

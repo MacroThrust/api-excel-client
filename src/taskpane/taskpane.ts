@@ -318,13 +318,13 @@ function renderFunctionReference(): string {
     },
     {
       name: "=MT.GETOBSERVATIONS",
-      args: "(seriesId, [startDate], [endDate], [limit], [offset])",
-      desc: "Fetch date-value pairs (GET /series/{id}/observations).",
+      args: "(seriesId, [startDate], [endDate], [limit], [offset], [fetchAll])",
+      desc: "Fetch date-value pairs (GET /series/{id}/observations). Fetches all pages by default.",
     },
     {
       name: "=MT.GETOBSERVATIONSDETAIL",
-      args: "(seriesId, [startDate], [endDate], [limit], [offset])",
-      desc: "Fetch full observation records (GET /series/{id}/observations-detail).",
+      args: "(seriesId, [startDate], [endDate], [limit], [offset], [fetchAll])",
+      desc: "Fetch full observation records (GET /series/{id}/observations-detail). Fetches all pages by default.",
     },
     {
       name: "=MT.GETHEALTH",
