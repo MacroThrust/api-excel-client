@@ -11,6 +11,7 @@ The add-in is hosted as a static site on **GitHub Pages** and deployed automatic
 | **End users** (install, sign in, formulas) | [docs/user-guide.md](docs/user-guide.md) — HTML is generated at build time and published at `https://macrothrust.github.io/api-excel-client/docs/user-guide.html` |
 | **Developers / admins** (build, config, CI) | This README |
 | **Microsoft Marketplace publication** (internal) | [docs/internal/microsoft-marketplace-publication.md](docs/internal/microsoft-marketplace-publication.md) |
+| **Authentik test accounts** (certification) | [docs/internal/authentik-test-accounts.md](docs/internal/authentik-test-accounts.md) |
 | **Support & privacy** (public URLs for certification) | [docs/support.md](docs/support.md), [docs/privacy-policy.md](docs/privacy-policy.md) |
 
 The user guide is copied into `dist/docs/` on every build, so it ships on GitHub Pages next to `manifest.xml` and the add-in bundles. The task pane includes a **User guide** link to that URL. Support and privacy pages are built the same way for Microsoft Marketplace certification URLs.

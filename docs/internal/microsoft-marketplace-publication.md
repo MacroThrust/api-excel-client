@@ -141,12 +141,16 @@ Current compile-time values in `src/shared/config.ts`:
 | Default `authentikBaseUrl` | `https://auth.macrothrust.com` |
 | Scopes | `openid profile email groups macrothrust-api` |
 
+**How to create test logins for Microsoft certification:** see **[authentik-test-accounts.md](./authentik-test-accounts.md)**.
+
+Summary: create a **dedicated Microsoft test account** (@outlook.com or test tenant), ensure it can sign in through **Authentik’s Microsoft federation**, and **pre-add the user to the Authentik group** that grants the `macrothrust-api` scope. Paste that Microsoft email/password into Partner Center **Notes for certification** — reviewers do not get a separate Authentik login in Excel.
+
 **<!-- TODO: Authentik production checklist: -->**
 
 - [ ] OAuth2 provider `macrothrust-excel` exists in production Authentik
-- [ ] Redirect URIs match Excel Online / desktop dialog URLs
-- [ ] Test user(s) with `macrothrust-api` scope for certification
-- [ ] Token exchange from Microsoft token documented for reviewers
+- [ ] Redirect URIs include `https://macrothrust.github.io/api-excel-client/auth-dialog.html`
+- [ ] Certification test user in API access group (`macrothrust-api` scope)
+- [ ] End-to-end test completed (see authentik-test-accounts.md)
 
 ### 7. Certification test notes (Partner Center → Review and publish)
 
@@ -166,20 +170,22 @@ PLATFORMS TO TEST
 - Excel on Windows (Microsoft 365)
 - Excel on Mac (Microsoft 365)
 
-SIGN-IN FLOW (SSO + fallback)
+SIGN-IN FLOW
 1. Install/open the add-in in Excel.
-2. Home ribbon → MT Data Connector → MT Menu → Sign In (or use task pane Sign In).
-3. Primary: Nested App Authentication (MSAL) acquires Microsoft token, then exchanges with Authentik.
-4. Fallback: If NAA unavailable, OAuth2 dialog opens Authentik with PKCE.
+2. Home ribbon → MT Data Connector → MT Menu → Sign In (or task pane Sign In).
+3. An auth dialog opens and redirects to Authentik (auth.macrothrust.com).
+4. On the Authentik page, choose Sign in with Microsoft.
+5. Sign in with the test Microsoft account below.
 
-<!-- TODO: Provide step-by-step for reviewers if Authentik shows a Microsoft IdP button or direct login. -->
+See docs/internal/authentik-test-accounts.md for how to create and authorize test users in Authentik.
 
 TEST CREDENTIALS (required — reviewers cannot contact us)
-<!-- TODO:
-Microsoft test account: user@___________  / password: ___________
-Authentik test account (if different): ___________
-API already provisioned for test user: Yes/No
--->
+Microsoft account (via Authentik federation):
+  Email: ___________
+  Password: ___________
+
+This account must already be in the Authentik group that grants macrothrust-api scope.
+No separate Authentik password is required unless your login flow shows one.
 
 CUSTOM FUNCTION TEST (required for add-ins with custom functions)
 1. After sign-in, wait for automatic reload or click MT Menu → Reload API Functions.
