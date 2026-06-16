@@ -143,7 +143,7 @@ Current compile-time values in `src/shared/config.ts`:
 
 **How to create test logins for Microsoft certification:** see **[authentik-test-accounts.md](./authentik-test-accounts.md)**.
 
-Summary: create a **dedicated Microsoft test account** (@outlook.com or test tenant), ensure it can sign in through **Authentik’s Microsoft federation**, and **pre-add the user to the Authentik group** that grants the `macrothrust-api` scope. Paste that Microsoft email/password into Partner Center **Notes for certification** — reviewers do not get a separate Authentik login in Excel.
+Summary: create a **dedicated Entra test user** in the same tenant as your app registration (Azure / Entra admin center → Users), ensure they can sign in through **Authentik’s Microsoft federation**, and **pre-add the user to the Authentik group** that grants the `macrothrust-api` scope. Paste that user’s email/password into Partner Center **Notes for certification**.
 
 **<!-- TODO: Authentik production checklist: -->**
 
