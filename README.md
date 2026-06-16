@@ -499,7 +499,7 @@ npm run validate
 ADDIN_HOST=https://macrothrust.github.io/api-excel-client npm run validate:production
 ```
 
-Upload the built **`dist/manifest.xml`** to Partner Center after production validation passes. Complete **`docs/support.md`** and **`docs/privacy-policy.md`** (legal review required) before submitting URLs in Partner Center.
+Upload the built **`dist/manifest.xml`** to Partner Center after production validation passes. **`docs/support.md`** and **`docs/privacy-policy.md`** are published as HTML on GitHub Pages for Partner Center URLs.
 
 Official Microsoft references:
 

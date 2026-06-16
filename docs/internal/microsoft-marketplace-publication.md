@@ -38,8 +38,8 @@ Publishing for **everyone** (public Marketplace listing) requires:
 | Icons (16, 32, 64, 80 px) | Done | `assets/` |
 | Custom functions + ribbon commands | Done | `src/functions/`, `src/commands/` |
 | User guide (end users) | Done | `docs/user-guide.md` |
-| Support page template | Draft — **fill in** | `docs/support.md` |
-| Privacy policy template | Draft — **fill in** | `docs/privacy-policy.md` |
+| Support page | Done | `docs/support.md` → `…/docs/support.html` |
+| Privacy policy | Done | `docs/privacy-policy.md` → `…/docs/privacy-policy.html` |
 | CI deploy to GitHub Pages | Done | `.github/workflows/deploy.yml` |
 | HTTPS hosting | Done | GitHub Pages |
 
@@ -66,7 +66,7 @@ Use this section as your working checklist. Search for `<!-- TODO:` in this repo
 | Display name | `MT Data Connector` | Must match Partner Center offer name (identical or very similar) |
 | Version | `1.0.0.0` in manifest / `1.0.0` in `package.json` | Bump both together on each Marketplace release |
 | Production host | `https://macrothrust.github.io/api-excel-client/` | **<!-- TODO: Confirm this is the permanent production URL, or replace `ADDIN_HOST` in CI if you move to a custom domain. -->** |
-| Support URL | `…/docs/support.html` | **<!-- TODO: Finalize `docs/support.md` and verify the deployed URL returns 200 without authentication. -->** |
+| Support URL | `…/docs/support.html` | Verify deployed URL returns 200 after merge (contact: mattange@gmail.com) |
 | `AppDomains` | `login.microsoftonline.com`, `auth.macrothrust.com`, `api.macrothrust.com` | **<!-- TODO: Confirm all auth/API domains are production-ready and listed in Azure/Authentik redirect URIs. -->** |
 
 **Pre-submit command (run locally or in CI):**
@@ -83,8 +83,8 @@ All links must be **valid `https://` URLs** (not email addresses), publicly reac
 
 | Requirement | Draft in repo | Final URL for Partner Center |
 |-------------|---------------|------------------------------|
-| **Privacy policy** | `docs/privacy-policy.md` → `…/docs/privacy-policy.html` | **<!-- TODO: `https://_______________` -->** |
-| **Support page** | `docs/support.md` → `…/docs/support.html` | **<!-- TODO: `https://_______________` -->** |
+| **Privacy policy** | `docs/privacy-policy.md` → `…/docs/privacy-policy.html` | `https://macrothrust.github.io/api-excel-client/docs/privacy-policy.html` |
+| **Support page** | `docs/support.md` → `…/docs/support.html` | `https://macrothrust.github.io/api-excel-client/docs/support.html` |
 | **EULA** | Not in repo | **<!-- TODO: Choose Microsoft Standard Contract in Partner Center OR host your own EULA at `https://_______________` -->** |
 
 **Privacy policy must include (Microsoft will reject otherwise):**
@@ -274,8 +274,8 @@ Microsoft requires apps to work on all supported platforms without errors.
 
 | File | Why |
 |------|-----|
-| `docs/support.md` | Public support contact & troubleshooting |
-| `docs/privacy-policy.md` | Legal requirement for Marketplace |
+| `docs/support.md` | Support contact (mattange@gmail.com) — update only if contact changes |
+| `docs/privacy-policy.md` | Privacy policy — update only if data practices change |
 | `docs/internal/microsoft-marketplace-publication.md` | This checklist — complete all TODOs |
 | `manifest.xml` | Only if changing `ProviderName`, domains, or display strings |
 | `src/shared/config.ts` | Only when production client IDs/URLs are finalized |
@@ -290,7 +290,7 @@ Microsoft requires apps to work on all supported platforms without errors.
 | Role | Name | Email |
 |------|------|-------|
 | Publication owner | **<!-- TODO: ___________ -->** | **<!-- TODO: ___________ -->** |
-| Legal (privacy/EULA) | **<!-- TODO: ___________ -->** | **<!-- TODO: ___________ -->** |
+| Legal (EULA in Partner Center) | **<!-- TODO: ___________ -->** | **<!-- TODO: ___________ -->** |
 | Azure / Entra admin | **<!-- TODO: ___________ -->** | **<!-- TODO: ___________ -->** |
 | Authentik admin | **<!-- TODO: ___________ -->** | **<!-- TODO: ___________ -->** |
 | API / backend owner | **<!-- TODO: ___________ -->** | **<!-- TODO: ___________ -->** |
