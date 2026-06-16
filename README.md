@@ -10,8 +10,11 @@ The add-in is hosted as a static site on **GitHub Pages** and deployed automatic
 |----------|----------------|
 | **End users** (install, sign in, formulas) | [docs/user-guide.md](docs/user-guide.md) — HTML is generated at build time and published at `https://macrothrust.github.io/api-excel-client/docs/user-guide.html` |
 | **Developers / admins** (build, config, CI) | This README |
+| **Microsoft Marketplace publication** (internal) | [docs/internal/microsoft-marketplace-publication.md](docs/internal/microsoft-marketplace-publication.md) |
+| **Authentik test accounts** (certification) | [docs/internal/authentik-test-accounts.md](docs/internal/authentik-test-accounts.md) |
+| **Support & privacy** (public URLs for certification) | [docs/support.md](docs/support.md), [docs/privacy-policy.md](docs/privacy-policy.md) |
 
-The user guide is copied into `dist/docs/` on every build, so it ships on GitHub Pages next to `manifest.xml` and the add-in bundles. The task pane includes a **User guide** link to that URL.
+The user guide is copied into `dist/docs/` on every build, so it ships on GitHub Pages next to `manifest.xml` and the add-in bundles. The task pane includes a **User guide** link to that URL. Support and privacy pages are built the same way for Microsoft Marketplace certification URLs.
 
 ## Architecture
 
@@ -476,6 +479,34 @@ User clicks "Sign In"
                                         │
                                   Store in Shared State
 ```
+
+---
+
+## Publishing to Microsoft Marketplace
+
+To list this add-in publicly on [Microsoft Marketplace](https://marketplace.microsoft.com/) (available in Excel’s in-product store), follow the internal checklist:
+
+**[docs/internal/microsoft-marketplace-publication.md](docs/internal/microsoft-marketplace-publication.md)**
+
+That document summarizes Microsoft’s requirements (Partner Center enrollment, privacy/support/EULA URLs, certification test notes, store listing assets) and marks every item you still need to complete with `<!-- TODO: -->` placeholders.
+
+### Quick pre-flight
+
+```bash
+# Schema validation (development manifest)
+npm run validate
+
+# Production validation (builds dist/ with production host, then validates)
+ADDIN_HOST=https://macrothrust.github.io/api-excel-client npm run validate:production
+```
+
+Upload the built **`dist/manifest.xml`** to Partner Center after production validation passes. **`docs/support.md`** and **`docs/privacy-policy.md`** are published as HTML on GitHub Pages for Partner Center URLs.
+
+Official Microsoft references:
+
+- [Publish Office Add-ins to Microsoft Marketplace](https://learn.microsoft.com/en-us/office/dev/add-ins/publish/publish-office-add-ins-to-appsource)
+- [Microsoft 365 app publishing checklist](https://learn.microsoft.com/en-us/partner-center/marketplace-offers/checklist)
+- [Submission guide](https://learn.microsoft.com/en-us/partner-center/marketplace-offers/add-in-submission-guide)
 
 ---
 
