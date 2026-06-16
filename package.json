@@ -4,7 +4,7 @@
   "description": "Excel Add-in with custom functions (MT.* UDFs) using Microsoft Account authentication via Authentik OAuth2",
   "private": true,
   "scripts": {
-    "build:docs": "node scripts/build-user-guide.js",
+    "build:docs": "node scripts/build-docs.js",
     "test:docs": "node --test scripts/build-user-guide.test.js",
     "build": "npm run build:docs && webpack --mode production",
     "build:dev": "npm run build:docs && webpack --mode development",
@@ -12,7 +12,8 @@
     "dev": "npm run build:docs && webpack serve --mode development",
     "start": "webpack serve --mode development --open",
     "lint": "eslint src/**/*.ts",
-    "validate": "office-addin-manifest validate manifest.xml"
+    "validate": "office-addin-manifest validate manifest.xml",
+    "validate:production": "npm run build:docs && ADDIN_HOST=${ADDIN_HOST:-https://macrothrust.github.io/api-excel-client} NODE_ENV=production webpack --mode production && office-addin-manifest validate dist/manifest.xml --production"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.27.0",

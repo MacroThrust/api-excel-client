@@ -1,6 +1,8 @@
 node_modules/
 dist/
 docs/user-guide.html
+docs/support.html
+docs/privacy-policy.html
 .env
 *.log
 .DS_Store
