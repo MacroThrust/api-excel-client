@@ -7,6 +7,8 @@
  * getAuthState() call so all bundles see the same session.
  */
 
+import { isTokenExpired as isSharedTokenExpired } from "@macrothrust/api-client";
+
 export interface AuthState {
   isAuthenticated: boolean;
   msAccessToken: string | null;
@@ -127,35 +129,9 @@ export function clearAuth(): void {
   broadcastAuthChange();
 }
 
-function getJwtExpiryMs(token: string): number | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))) as {
-      exp?: number;
-    };
-    return payload.exp ? payload.exp * 1000 : null;
-  } catch {
-    return null;
-  }
-}
-
 export function isTokenExpired(): boolean {
   hydrateFromStorage();
-  const now = Date.now();
-
-  if (state.tokenExpiry && now >= state.tokenExpiry - 30_000) {
-    return true;
-  }
-
-  if (state.authentikAccessToken) {
-    const jwtExpiry = getJwtExpiryMs(state.authentikAccessToken);
-    if (jwtExpiry && now >= jwtExpiry - 30_000) {
-      return true;
-    }
-  }
-
-  return false;
+  return isSharedTokenExpired(state.authentikAccessToken, state.tokenExpiry);
 }
 
 export function updateUserProfile(params: {

@@ -18,22 +18,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout api-excel-client
         uses: actions/checkout@v4
+        with:
+          path: api-excel-client
+
+      - name: Checkout api-client
+        uses: actions/checkout@v4
+        with:
+          repository: MacroThrust/api-client
+          path: api-client
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: api-excel-client/package-lock.json
 
-      - name: Install dependencies
+      - name: Build shared api-client
+        working-directory: api-client
+        run: |
+          npm install
+          npm run build
+
+      - name: Install add-in dependencies
+        working-directory: api-excel-client
         run: npm ci
 
       - name: Test user guide build
+        working-directory: api-excel-client
         run: npm run test:docs
 
       - name: Build for GitHub Pages
+        working-directory: api-excel-client
         env:
           NODE_ENV: production
           # GitHub Pages URL: https://<owner>.github.io/<repo>/
@@ -44,7 +62,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: api-excel-client/dist
 
   deploy:
     needs: build

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@azure/msal-browser": "^3.27.0",
+    "@macrothrust/api-client": "file:../api-client",
     "office-addin-manifest": "^1.13.0"
   },
   "devDependencies": {

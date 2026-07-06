@@ -1,159 +1,52 @@
 /**
- * OpenAPI 3.x spec fetcher and parser.
+ * OpenAPI helpers for Excel custom-function generation.
  *
- * Retrieves an OpenAPI spec from the target API, parses it into a flat list
- * of endpoint descriptors, and supports filtering by OAuth2 scopes so only
- * permitted operations surface as Excel custom functions.
+ * Shared fetch/parse/filter logic lives in @macrothrust/api-client; this module
+ * adds Excel-specific function naming (functionId / functionName).
  */
 
-/* ------------------------------------------------------------------ */
-/*  OpenAPI 3.x type subset (enough for function generation)          */
-/* ------------------------------------------------------------------ */
+import {
+  extractAllDefinedScopes,
+  fetchOpenApiSpec,
+  fetchOpenApiSpecFromUrl,
+  filterEndpointsByScopes as filterEndpointsByScopesShared,
+  normalizeApiPath,
+  parseEndpoints as parseSharedEndpoints,
+  routeKey,
+  type ApiEndpoint as SharedApiEndpoint,
+  type OpenApiOperation,
+  type OpenApiParameter,
+  type OpenApiPathItem,
+  type OpenApiSchema,
+  type OpenApiSecurityRequirement,
+  type OpenApiSecurityScheme,
+  type OpenApiSpec,
+} from "@macrothrust/api-client";
 
-export interface OpenApiSpec {
-  openapi: string;
-  info: { title: string; version: string; description?: string };
-  paths: Record<string, OpenApiPathItem>;
-  components?: {
-    securitySchemes?: Record<string, OpenApiSecurityScheme>;
-  };
-  security?: OpenApiSecurityRequirement[];
-}
+export type {
+  OpenApiOperation,
+  OpenApiParameter,
+  OpenApiPathItem,
+  OpenApiSchema,
+  OpenApiSecurityRequirement,
+  OpenApiSecurityScheme,
+  OpenApiSpec,
+};
 
-export interface OpenApiPathItem {
-  get?: OpenApiOperation;
-  post?: OpenApiOperation;
-  put?: OpenApiOperation;
-  delete?: OpenApiOperation;
-  patch?: OpenApiOperation;
-  head?: OpenApiOperation;
-  options?: OpenApiOperation;
-  parameters?: OpenApiParameter[];
-}
+export {
+  extractAllDefinedScopes,
+  fetchOpenApiSpec,
+  fetchOpenApiSpecFromUrl,
+  normalizeApiPath,
+  routeKey,
+};
 
-export interface OpenApiOperation {
-  operationId?: string;
-  summary?: string;
-  description?: string;
-  parameters?: OpenApiParameter[];
-  security?: OpenApiSecurityRequirement[];
-  tags?: string[];
-  requestBody?: {
-    required?: boolean;
-    content?: Record<string, { schema?: OpenApiSchema }>;
-  };
-  responses?: Record<string, unknown>;
-  deprecated?: boolean;
-}
-
-export interface OpenApiParameter {
-  name: string;
-  in: "query" | "path" | "header" | "cookie";
-  required?: boolean;
-  description?: string;
-  schema?: OpenApiSchema;
-  deprecated?: boolean;
-}
-
-export interface OpenApiSchema {
-  type?: string;
-  format?: string;
-  enum?: unknown[];
-  description?: string;
-  items?: OpenApiSchema;
-  properties?: Record<string, OpenApiSchema>;
-}
-
-export interface OpenApiSecurityScheme {
-  type: string;
-  flows?: Record<string, { scopes?: Record<string, string> }>;
-  scheme?: string;
-  openIdConnectUrl?: string;
-}
-
-export type OpenApiSecurityRequirement = Record<string, string[]>;
-
-/* ------------------------------------------------------------------ */
-/*  Parsed endpoint descriptor                                        */
-/* ------------------------------------------------------------------ */
-
-export interface ApiEndpoint {
-  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  path: string;
-  operationId: string | undefined;
-  summary: string;
-  description: string;
-  pathParameters: OpenApiParameter[];
-  queryParameters: OpenApiParameter[];
-  requiredScopes: string[];
-  tags: string[];
-  hasRequestBody: boolean;
-  deprecated: boolean;
+export interface ApiEndpoint extends SharedApiEndpoint {
   /** e.g. "getUsers" */
   functionName: string;
   /** Uppercase ID for CustomFunctions.associate, e.g. "GETUSERS" */
   functionId: string;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Spec fetching                                                     */
-/* ------------------------------------------------------------------ */
-
-const WELL_KNOWN_SPEC_PATHS = [
-  "/openapi.json",
-  "/api/openapi.json",
-  "/swagger.json",
-  "/api/swagger.json",
-  "/docs/openapi.json",
-  "/api-docs",
-  "/v1/openapi.json",
-];
-
-export async function fetchOpenApiSpec(
-  baseUrl: string,
-  bearerToken?: string,
-): Promise<OpenApiSpec> {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (bearerToken) headers["Authorization"] = `Bearer ${bearerToken}`;
-
-  for (const specPath of WELL_KNOWN_SPEC_PATHS) {
-    try {
-      const res = await fetch(`${baseUrl}${specPath}`, { headers });
-      if (res.ok) {
-        const spec = (await res.json()) as OpenApiSpec;
-        if (spec?.openapi && spec.paths) return spec;
-      }
-    } catch {
-      /* try next */
-    }
-  }
-
-  throw new Error(
-    `Could not find an OpenAPI spec at ${baseUrl}. Tried: ${WELL_KNOWN_SPEC_PATHS.join(", ")}`,
-  );
-}
-
-export async function fetchOpenApiSpecFromUrl(
-  url: string,
-  bearerToken?: string,
-): Promise<OpenApiSpec> {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (bearerToken) headers["Authorization"] = `Bearer ${bearerToken}`;
-
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch OpenAPI spec: ${res.status} ${res.statusText}`);
-  }
-  const spec = (await res.json()) as OpenApiSpec;
-  if (!spec?.paths) {
-    throw new Error("Invalid OpenAPI spec: missing 'paths' property");
-  }
-  return spec;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Function-name generation                                          */
-/* ------------------------------------------------------------------ */
 
 const VERB_MAP: Record<string, string> = {
   get: "Get",
@@ -189,7 +82,6 @@ function snakeToPascalCase(value: string): string {
     .join("");
 }
 
-/** Strip FastAPI auto-generated suffixes like `_v1_sources_get` from operationIds. */
 function normalizeOperationId(operationId: string): string {
   let name = operationId.replace(/[^a-zA-Z0-9_]/g, "");
   name = name.replace(/_v\d+_[\w]+_(get|post|put|delete|patch)$/i, "");
@@ -225,26 +117,6 @@ function operationIdToFunctionName(operationId: string, method: string): string 
   return verb + snakeToPascalCase(normalized);
 }
 
-/** Remove a leading /vN segment when the configured API base URL already includes it. */
-export function normalizeApiPath(path: string, apiBaseUrl: string): string {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const base = apiBaseUrl.replace(/\/+$/, "");
-  const versionMatch = base.match(/\/v(\d+)$/i);
-  if (!versionMatch) return normalizedPath;
-
-  const versionPrefix = `/v${versionMatch[1]}`;
-  if (normalizedPath === versionPrefix) return "/";
-  if (normalizedPath.startsWith(`${versionPrefix}/`)) {
-    return normalizedPath.slice(versionPrefix.length) || "/";
-  }
-  return normalizedPath;
-}
-
-export function routeKey(method: string, path: string): string {
-  const normalizedPath = path.replace(/^\/v\d+(?=\/|$)/i, "") || "/";
-  return `${method.toUpperCase()}:${normalizedPath}`;
-}
-
 export function getBuiltinFunctionId(method: string, path: string): string | undefined {
   return BUILTIN_FUNCTION_BY_ROUTE[routeKey(method, path)];
 }
@@ -273,98 +145,35 @@ export function generateFunctionName(
   return `${verb}${pathPart}`;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Spec → ApiEndpoint[]                                              */
-/* ------------------------------------------------------------------ */
-
-const HTTP_METHODS = ["get", "post", "put", "delete", "patch"] as const;
-
-function extractRequiredScopes(
-  operation: OpenApiOperation,
-  globalSecurity: OpenApiSecurityRequirement[] | undefined,
-): string[] {
-  const secReqs = operation.security ?? globalSecurity ?? [];
-  const scopes = new Set<string>();
-  for (const req of secReqs) {
-    for (const list of Object.values(req)) {
-      for (const s of list) scopes.add(s);
-    }
-  }
-  return Array.from(scopes);
-}
-
 export function parseEndpoints(spec: OpenApiSpec): ApiEndpoint[] {
-  const endpoints: ApiEndpoint[] = [];
+  const base = parseSharedEndpoints(spec);
   const usedIds = new Set<string>();
 
-  for (const [path, pathItem] of Object.entries(spec.paths)) {
-    if (!pathItem) continue;
-    const pathLevelParams = pathItem.parameters ?? [];
+  return base.map((endpoint) => {
+    let funcName = generateFunctionName(
+      endpoint.method,
+      endpoint.path,
+      endpoint.operationId,
+    );
 
-    for (const method of HTTP_METHODS) {
-      const op = pathItem[method];
-      if (!op || op.deprecated) continue;
-
-      const allParams = [...pathLevelParams, ...(op.parameters ?? [])];
-      const pathParams = allParams.filter((p) => p.in === "path" && !p.deprecated);
-      const queryParams = allParams.filter((p) => p.in === "query" && !p.deprecated);
-
-      let funcName = generateFunctionName(method, path, op.operationId);
-
-      let suffix = 2;
-      const base = funcName;
-      while (usedIds.has(funcName.toUpperCase())) {
-        funcName = `${base}${suffix++}`;
-      }
-      usedIds.add(funcName.toUpperCase());
-
-      endpoints.push({
-        method: method.toUpperCase() as ApiEndpoint["method"],
-        path,
-        operationId: op.operationId,
-        summary: op.summary ?? "",
-        description: op.description ?? op.summary ?? `${method.toUpperCase()} ${path}`,
-        pathParameters: pathParams,
-        queryParameters: queryParams,
-        requiredScopes: extractRequiredScopes(op, spec.security),
-        tags: op.tags ?? [],
-        hasRequestBody: !!op.requestBody,
-        deprecated: !!op.deprecated,
-        functionName: funcName,
-        functionId: funcName.toUpperCase(),
-      });
+    let suffix = 2;
+    const baseName = funcName;
+    while (usedIds.has(funcName.toUpperCase())) {
+      funcName = `${baseName}${suffix++}`;
     }
-  }
+    usedIds.add(funcName.toUpperCase());
 
-  return endpoints;
+    return {
+      ...endpoint,
+      functionName: funcName,
+      functionId: funcName.toUpperCase(),
+    };
+  });
 }
-
-/* ------------------------------------------------------------------ */
-/*  Permission filtering                                              */
-/* ------------------------------------------------------------------ */
 
 export function filterEndpointsByScopes(
   endpoints: ApiEndpoint[],
   userScopes: string[],
 ): ApiEndpoint[] {
-  const scopeSet = new Set(userScopes);
-  return endpoints.filter(
-    (ep) =>
-      ep.requiredScopes.length === 0 ||
-      ep.requiredScopes.every((s) => scopeSet.has(s)),
-  );
-}
-
-export function extractAllDefinedScopes(spec: OpenApiSpec): Record<string, string> {
-  const result: Record<string, string> = {};
-  const schemes = spec.components?.securitySchemes;
-  if (!schemes) return result;
-  for (const scheme of Object.values(schemes)) {
-    if (scheme.flows) {
-      for (const flow of Object.values(scheme.flows)) {
-        if (flow.scopes) Object.assign(result, flow.scopes);
-      }
-    }
-  }
-  return result;
+  return filterEndpointsByScopesShared(endpoints, userScopes) as ApiEndpoint[];
 }

@@ -19,6 +19,7 @@ import {
   InteractionRequiredAuthError,
   createNestablePublicClientApplication,
 } from "@azure/msal-browser";
+import { computeTokenExpiryMs, refreshOAuthToken } from "@macrothrust/api-client";
 import { getConfig } from "../shared/config";
 import {
   setAuthenticated,
@@ -230,30 +231,18 @@ export async function refreshAccessToken(): Promise<boolean> {
   if (!auth.authentikRefreshToken) return false;
 
   const config = getConfig();
-  const response = await fetch(config.authentikTokenEndpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: config.authentikClientId,
-      refresh_token: auth.authentikRefreshToken,
-    }).toString(),
+  const tokenData = await refreshOAuthToken({
+    tokenEndpoint: config.authentikTokenEndpoint,
+    clientId: config.authentikClientId,
+    refreshToken: auth.authentikRefreshToken,
   });
 
-  if (!response.ok) return false;
-
-  const tokenData = (await response.json()) as {
-    access_token: string;
-    refresh_token?: string;
-    expires_in?: number;
-  };
+  if (!tokenData) return false;
 
   updateAccessToken({
     authentikAccessToken: tokenData.access_token,
     authentikRefreshToken: tokenData.refresh_token ?? auth.authentikRefreshToken,
-    tokenExpiry: tokenData.expires_in
-      ? Date.now() + tokenData.expires_in * 1000
-      : null,
+    tokenExpiry: computeTokenExpiryMs(tokenData.expires_in),
   });
 
   return true;
