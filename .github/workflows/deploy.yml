@@ -22,12 +22,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: api-excel-client
+          # Avoid persisting credentials from this checkout so the api-client
+          # checkout below can use its own token.
+          persist-credentials: false
 
       - name: Checkout api-client
         uses: actions/checkout@v4
         with:
           repository: MacroThrust/api-client
           path: api-client
+          # Private repo checkout: uses API_CLIENT_CHECKOUT_TOKEN when set, otherwise
+          # the workflow GITHUB_TOKEN (requires org/repo access policy — see README).
+          token: ${{ secrets.API_CLIENT_CHECKOUT_TOKEN || github.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

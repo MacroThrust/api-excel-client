@@ -178,7 +178,8 @@ The deployed site contains:
 
 1. A GitHub repository with this code on the `main` branch
 2. GitHub Pages enabled for the repository (see setup steps below)
-3. The following configuration values updated in the source (see [Configuration](#configuration))
+3. Access to the private [`MacroThrust/api-client`](https://github.com/MacroThrust/api-client) repository from CI (see [Checking out the private api-client dependency](#checking-out-the-private-api-client-dependency))
+4. The following configuration values updated in the source (see [Configuration](#configuration))
 
 ### One-Time GitHub Pages Setup
 
@@ -195,6 +196,72 @@ https://macrothrust.github.io/api-excel-client/
 
 Repository: [github.com/MacroThrust/api-excel-client](https://github.com/MacroThrust/api-excel-client)
 
+### Checking out the private api-client dependency
+
+The add-in depends on [`@macrothrust/api-client`](https://github.com/MacroThrust/api-client) via a local `file:` link in `package.json`. The deploy workflow checks out both repositories as sibling directories, builds `api-client`, then builds this add-in.
+
+Because `api-client` is private, the workflow must authenticate when checking it out. The workflow (`.github/workflows/deploy.yml`) supports two approaches:
+
+| Approach | When to use | Secret required |
+|---|---|---|
+| **Organization workflow access** (recommended) | Both repos live in the same GitHub organization | None — uses the built-in `GITHUB_TOKEN` |
+| **Personal access token (PAT)** | Org policy cannot be changed, or you need access from outside the org | `API_CLIENT_CHECKOUT_TOKEN` on this repository |
+
+The checkout step uses `secrets.API_CLIENT_CHECKOUT_TOKEN` when that secret exists; otherwise it falls back to `github.token` (the workflow’s `GITHUB_TOKEN`).
+
+#### Option A — Organization workflow access (recommended)
+
+Grant this repository’s workflows read access to `api-client` through GitHub’s cross-repository Actions access policy.
+
+**1. On the `api-client` repository**
+
+1. Open **Settings** → **Actions** → **General**
+2. Scroll to **Access**
+3. Under **Access to this repository from workflows in other repositories**, choose one of:
+   - **Accessible from repositories in the 'MacroThrust' organization** — any org repo’s workflow can check out `api-client` (simplest for internal repos)
+   - **Accessible from select repositories** — add `MacroThrust/api-excel-client` only (least privilege)
+
+**2. On the organization (if the option above is not visible)**
+
+Org owners may need to enable cross-repo workflow access first:
+
+1. Open **Organization settings** → **Actions** → **General**
+2. Under **Policies**, confirm GitHub Actions is enabled for the repositories that need it
+3. Under **Workflow permissions**, the default **Read repository contents** permission is sufficient for checkout
+
+**3. Verify**
+
+Push to `main` (or run the **Build and Deploy to GitHub Pages** workflow manually). The **Checkout api-client** step should succeed without adding any secrets to `api-excel-client`.
+
+Official reference: [Making private repository content accessible to GitHub Actions](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow).
+
+#### Option B — Personal access token (fallback)
+
+Use this when organization policy does not allow cross-repo `GITHUB_TOKEN` access, or when you need a token with explicit, auditable scope.
+
+**1. Create a fine-grained PAT**
+
+1. GitHub **Settings** → **Developer settings** → **Fine-grained personal access tokens** → **Generate new token**
+2. **Resource owner**: `MacroThrust`
+3. **Repository access**: **Only select repositories** → choose `api-client`
+4. **Permissions** → **Repository permissions** → **Contents**: **Read-only**
+5. Generate and copy the token
+
+Classic PATs also work (`repo` scope or read access to the target repo); fine-grained tokens are preferred for least privilege.
+
+**2. Add the secret to this repository**
+
+1. Open **MacroThrust/api-excel-client** → **Settings** → **Secrets and variables** → **Actions**
+2. **New repository secret**
+3. Name: `API_CLIENT_CHECKOUT_TOKEN`
+4. Value: the PAT from step 1
+
+The workflow will use this secret automatically on the next run. You do not need to change `.github/workflows/deploy.yml`.
+
+**3. Rotate**
+
+When the PAT expires or is revoked, update the secret value. Consider using a machine/bot account for org-wide automation so token rotation does not depend on an individual developer’s account.
+
 ### How the CI Pipeline Works
 
 The workflow file is at `.github/workflows/deploy.yml`. Here is what happens on every push to `main` (or manual trigger via `workflow_dispatch`):
@@ -206,14 +273,17 @@ Push to main
 ┌─────────────────────────────────────────────────┐
 │  Job: build                                      │
 │                                                  │
-│  1. Checkout repository                          │
-│  2. Setup Node.js 20 with npm cache              │
-│  3. npm ci (install locked dependencies)         │
-│  4. npm run build                                │
+│  1. Checkout api-excel-client                    │
+│  2. Checkout api-client (private; see above)     │
+│  3. Setup Node.js 22 with npm cache              │
+│  4. Build api-client (npm install && build)      │
+│  5. npm ci in api-excel-client                   │
+│  6. npm run test:docs                            │
+│  7. npm run build                                │
 │     └─ ADDIN_HOST is set to the GitHub Pages URL │
 │     └─ manifest.xml URLs are rewritten           │
 │     └─ version.json is emitted                   │
-│  5. Upload dist/ as a Pages artifact             │
+│  8. Upload dist/ as a Pages artifact             │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
@@ -227,6 +297,7 @@ Push to main
 
 Key details:
 
+- **`api-client` checkout** uses `API_CLIENT_CHECKOUT_TOKEN` when configured, otherwise the workflow `GITHUB_TOKEN` with organization cross-repo access (see [Checking out the private api-client dependency](#checking-out-the-private-api-client-dependency)).
 - **`ADDIN_HOST`** is computed automatically from `github.repository_owner` and `github.event.repository.name`, so no manual URL configuration is needed in the workflow.
 - **`manifest.xml`** is transformed at build time: every occurrence of `https://localhost:3000` is replaced with the GitHub Pages URL.
 - **`version.json`** is emitted alongside the bundle so the update checker in running add-in instances can detect new deployments.
